@@ -37,7 +37,7 @@ Future<int?> showLumeActionSheet(
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 14),
                 decoration: BoxDecoration(
-                  color: LumeColors.outline,
+                  color: context.lume.outline,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -52,7 +52,7 @@ Future<int?> showLumeActionSheet(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.9,
-                      color: LumeColors.inkMuted,
+                      color: context.lume.inkMuted,
                     ),
                   ),
                 ),
@@ -88,7 +88,7 @@ class _SheetRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: LumeColors.surface,
+      color: context.lume.surface,
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         onTap: onTap,
@@ -106,12 +106,12 @@ class _SheetRow extends StatelessWidget {
                     fontFamily: fontFamily,
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: action.danger ? const Color(0xFFB3261E) : LumeColors.ink,
+                    color: action.danger ? const Color(0xFFB3261E) : context.lume.ink,
                   ),
                 ),
               ),
               if (action.checked)
-                const Icon(Icons.check_rounded, size: 18, color: LumeColors.primary),
+                Icon(Icons.check_rounded, size: 18, color: context.lume.primary),
             ],
           ),
         ),
@@ -133,7 +133,7 @@ class LumeSheetCancelButton extends StatelessWidget {
         onPressed: () => Navigator.of(context).pop(),
         style: OutlinedButton.styleFrom(
           minimumSize: const Size.fromHeight(LumeTouch.primaryAction - 2),
-          side: const BorderSide(color: LumeColors.outline),
+          side: BorderSide(color: context.lume.outline),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(LumeRadii.pill)),
         ),
         child: Text(
@@ -142,7 +142,7 @@ class LumeSheetCancelButton extends StatelessWidget {
             fontFamily: fontFamily,
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: LumeColors.inkMuted,
+            color: context.lume.inkMuted,
           ),
         ),
       ),

@@ -11,20 +11,22 @@ class ProgressRing extends StatelessWidget {
     required this.percent,
     required this.size,
     this.strokeWidth = 7,
-    this.trackColor = LumeColors.surface,
-    this.progressColor = LumeColors.primary,
+    this.trackColor,
+    this.progressColor,
     this.child,
   });
 
   final double percent;
   final double size;
   final double strokeWidth;
-  final Color trackColor;
-  final Color progressColor;
+  final Color? trackColor;
+  final Color? progressColor;
   final Widget? child;
 
   @override
   Widget build(BuildContext context) {
+    final track = trackColor ?? context.lume.surface;
+    final progressTone = progressColor ?? context.lume.primary;
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: percent.clamp(0, 1).toDouble()),
       duration: LumeMotion.progress,
@@ -41,8 +43,8 @@ class ProgressRing extends StatelessWidget {
                 painter: _RingPainter(
                   percent: animatedPercent,
                   strokeWidth: strokeWidth,
-                  trackColor: trackColor,
-                  progressColor: progressColor,
+                  trackColor: track,
+                  progressColor: progressTone,
                 ),
               ),
               if (child != null) child!,

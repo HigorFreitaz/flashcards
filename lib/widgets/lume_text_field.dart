@@ -44,7 +44,7 @@ class LumeTextField extends StatelessWidget {
               fontSize: 12,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.8,
-              color: LumeColors.inkMuted,
+              color: context.lume.inkMuted,
             ),
           ),
         ),
@@ -52,8 +52,8 @@ class LumeTextField extends StatelessWidget {
           constraints: const BoxConstraints(minHeight: LumeTouch.primaryAction - 2),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           decoration: BoxDecoration(
-            color: LumeColors.background,
-            border: Border.all(color: LumeColors.outline),
+            color: context.lume.background,
+            border: Border.all(color: context.lume.outline),
             borderRadius: BorderRadius.circular(LumeRadii.field),
           ),
           child: Row(
@@ -66,12 +66,12 @@ class LumeTextField extends StatelessWidget {
                   minLines: minLines,
                   maxLines: maxLines,
                   autofocus: autofocus,
-                  style: TextStyle(fontFamily: fontFamily, fontSize: 16, color: LumeColors.ink),
+                  style: TextStyle(fontFamily: fontFamily, fontSize: 16, color: context.lume.ink),
                   decoration: InputDecoration(
                     isCollapsed: true,
                     border: InputBorder.none,
                     hintText: placeholder,
-                    hintStyle: TextStyle(fontFamily: fontFamily, fontSize: 16, color: LumeColors.inkMuted),
+                    hintStyle: TextStyle(fontFamily: fontFamily, fontSize: 16, color: context.lume.inkMuted),
                   ),
                 ),
               ),
@@ -103,7 +103,7 @@ class LumeFieldLabel extends StatelessWidget {
           fontSize: 12,
           fontWeight: FontWeight.w700,
           letterSpacing: 0.8,
-          color: LumeColors.inkMuted,
+          color: context.lume.inkMuted,
         ),
       ),
     );

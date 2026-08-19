@@ -131,11 +131,11 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: Text('Cancelar', style: TextStyle(fontFamily: fontFamily, fontSize: 16, color: LumeColors.primary)),
+                    child: Text('Cancelar', style: TextStyle(fontFamily: fontFamily, fontSize: 16, color: context.lume.primary)),
                   ),
                   Text(
                     _isEditing ? 'Editar baralho' : 'Novo baralho',
-                    style: TextStyle(fontFamily: fontFamily, fontSize: 16, fontWeight: FontWeight.w600, color: LumeColors.ink),
+                    style: TextStyle(fontFamily: fontFamily, fontSize: 16, fontWeight: FontWeight.w600, color: context.lume.ink),
                   ),
                   const SizedBox(width: 62),
                 ],
@@ -154,20 +154,20 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(15),
                       decoration: BoxDecoration(
-                        color: LumeColors.background,
-                        border: Border.all(color: LumeColors.outline),
+                        color: context.lume.background,
+                        border: Border.all(color: context.lume.outline),
                         borderRadius: BorderRadius.circular(LumeRadii.field),
                       ),
                       child: TextField(
                         controller: _descriptionController,
                         minLines: 2,
                         maxLines: 4,
-                        style: TextStyle(fontFamily: fontFamily, fontSize: 16, height: 1.45, color: LumeColors.ink),
+                        style: TextStyle(fontFamily: fontFamily, fontSize: 16, height: 1.45, color: context.lume.ink),
                         decoration: InputDecoration(
                           isCollapsed: true,
                           border: InputBorder.none,
                           hintText: 'Para que serve este baralho?',
-                          hintStyle: TextStyle(fontFamily: fontFamily, fontSize: 16, height: 1.45, color: LumeColors.inkMuted),
+                          hintStyle: TextStyle(fontFamily: fontFamily, fontSize: 16, height: 1.45, color: context.lume.inkMuted),
                         ),
                       ),
                     ),
@@ -189,7 +189,7 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
                     ),
                     const SizedBox(height: 22),
                     Container(
-                      decoration: BoxDecoration(color: LumeColors.surface, borderRadius: BorderRadius.circular(18)),
+                      decoration: BoxDecoration(color: context.lume.surface, borderRadius: BorderRadius.circular(18)),
                       child: Column(
                         children: [
                           Padding(
@@ -200,13 +200,13 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text('Lembretes', style: TextStyle(fontFamily: fontFamily, fontSize: 15, fontWeight: FontWeight.w600, color: LumeColors.ink)),
+                                      Text('Lembretes', style: TextStyle(fontFamily: fontFamily, fontSize: 15, fontWeight: FontWeight.w600, color: context.lume.ink)),
                                       const SizedBox(height: 3),
                                       Text(
                                         _remindersEnabled
                                             ? (_reminderTimes.length == 1 ? '1 horário por dia' : '${_reminderTimes.length} horários por dia')
                                             : 'Desativado',
-                                        style: TextStyle(fontFamily: fontFamily, fontSize: 13, color: LumeColors.inkMuted),
+                                        style: TextStyle(fontFamily: fontFamily, fontSize: 13, color: context.lume.inkMuted),
                                       ),
                                     ],
                                   ),
@@ -222,7 +222,7 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
                           if (_remindersEnabled)
                             Container(
                               padding: const EdgeInsets.all(12),
-                              decoration: const BoxDecoration(border: Border(top: BorderSide(color: LumeColors.outline))),
+                              decoration: BoxDecoration(border: Border(top: BorderSide(color: context.lume.outline))),
                               child: Column(
                                 children: [
                                   ..._reminderTimes.map((time) => Padding(
@@ -230,18 +230,18 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
                                         child: Container(
                                           padding: const EdgeInsets.only(left: 14, right: 4),
                                           constraints: const BoxConstraints(minHeight: 54),
-                                          decoration: BoxDecoration(color: LumeColors.background, borderRadius: BorderRadius.circular(15)),
+                                          decoration: BoxDecoration(color: context.lume.background, borderRadius: BorderRadius.circular(15)),
                                           child: Row(
                                             children: [
-                                              const Icon(Icons.schedule_rounded, size: 17, color: LumeColors.primary),
+                                              Icon(Icons.schedule_rounded, size: 17, color: context.lume.primary),
                                               const SizedBox(width: 10),
                                               Expanded(
-                                                child: Text(time, style: TextStyle(fontFamily: fontFamily, fontSize: 17, fontWeight: FontWeight.w700, color: LumeColors.ink)),
+                                                child: Text(time, style: TextStyle(fontFamily: fontFamily, fontSize: 17, fontWeight: FontWeight.w700, color: context.lume.ink)),
                                               ),
-                                              Text(_reminderTag(time), style: TextStyle(fontFamily: fontFamily, fontSize: 12, color: LumeColors.inkMuted)),
+                                              Text(_reminderTag(time), style: TextStyle(fontFamily: fontFamily, fontSize: 12, color: context.lume.inkMuted)),
                                               IconButton(
                                                 onPressed: () => _removeReminder(time),
-                                                icon: const Icon(Icons.close_rounded, size: 18, color: LumeColors.inkMuted),
+                                                icon: Icon(Icons.close_rounded, size: 18, color: context.lume.inkMuted),
                                                 tooltip: 'Remover lembrete',
                                               ),
                                             ],
@@ -252,12 +252,12 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
                                     onPressed: _openTimePicker,
                                     style: OutlinedButton.styleFrom(
                                       minimumSize: const Size.fromHeight(50),
-                                      side: const BorderSide(color: LumeColors.outline),
+                                      side: BorderSide(color: context.lume.outline),
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                                     ),
                                     child: Text(
                                       '+ Adicionar horário',
-                                      style: TextStyle(fontFamily: fontFamily, fontSize: 14, fontWeight: FontWeight.w600, color: LumeColors.primary),
+                                      style: TextStyle(fontFamily: fontFamily, fontSize: 14, fontWeight: FontWeight.w600, color: context.lume.primary),
                                     ),
                                   ),
                                 ],

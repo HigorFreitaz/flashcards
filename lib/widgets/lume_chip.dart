@@ -28,9 +28,9 @@ class LumeChip extends StatelessWidget {
         height: LumeTouch.minimum,
         padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
-          color: selected ? LumeColors.primary : LumeColors.background,
+          color: selected ? context.lume.primary : context.lume.background,
           borderRadius: BorderRadius.circular(LumeRadii.pill),
-          border: Border.all(color: selected ? LumeColors.primary : LumeColors.outline),
+          border: Border.all(color: selected ? context.lume.primary : context.lume.outline),
         ),
         alignment: Alignment.center,
         child: Text(
@@ -39,7 +39,7 @@ class LumeChip extends StatelessWidget {
             fontFamily: fontFamily,
             fontSize: 13,
             fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-            color: selected ? LumeColors.background : LumeColors.ink,
+            color: selected ? context.lume.background : context.lume.ink,
           ),
         ),
       ),
@@ -61,7 +61,7 @@ class LumeBadge extends StatelessWidget {
       height: 24,
       padding: const EdgeInsets.symmetric(horizontal: 9),
       decoration: BoxDecoration(
-        color: emphasis ? LumeColors.primary : LumeColors.surface,
+        color: emphasis ? context.lume.primary : context.lume.surface,
         borderRadius: BorderRadius.circular(LumeRadii.badge + 6),
       ),
       alignment: Alignment.center,
@@ -71,7 +71,7 @@ class LumeBadge extends StatelessWidget {
           fontFamily: fontFamily,
           fontSize: 11,
           fontWeight: FontWeight.w700,
-          color: emphasis ? LumeColors.background : LumeColors.inkMuted,
+          color: emphasis ? context.lume.background : context.lume.inkMuted,
         ),
       ),
     );

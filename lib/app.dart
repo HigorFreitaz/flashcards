@@ -12,12 +12,26 @@ class LumeApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => AppState(),
-      child: MaterialApp(
-        title: 'Lume',
-        debugShowCheckedModeBanner: false,
-        theme: buildLumeTheme(),
-        home: const AuthScreen(),
-      ),
+      child: const _LumeMaterialApp(),
+    );
+  }
+}
+
+/// Separado do [LumeApp] só para que o `MaterialApp` consiga observar o
+/// [AppState] (o `Provider` só fica visível para os widgets abaixo dele).
+class _LumeMaterialApp extends StatelessWidget {
+  const _LumeMaterialApp();
+
+  @override
+  Widget build(BuildContext context) {
+    final themeMode = context.watch<AppState>().themeMode;
+    return MaterialApp(
+      title: 'Lume',
+      debugShowCheckedModeBanner: false,
+      theme: buildLumeTheme(brightness: Brightness.light),
+      darkTheme: buildLumeTheme(brightness: Brightness.dark),
+      themeMode: themeMode,
+      home: const AuthScreen(),
     );
   }
 }

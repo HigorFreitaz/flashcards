@@ -78,7 +78,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   height: 1.2,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.6,
-                  color: LumeColors.ink,
+                  color: context.lume.ink,
                 ),
               ),
               const SizedBox(height: 8),
@@ -86,7 +86,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 isSignUp
                     ? 'Leva menos de um minuto. Você começa a estudar em seguida.'
                     : 'Seus baralhos e sua sequência sincronizam em todos os aparelhos.',
-                style: TextStyle(fontFamily: fontFamily, fontSize: 15, height: 1.5, color: LumeColors.inkMuted),
+                style: TextStyle(fontFamily: fontFamily, fontSize: 15, height: 1.5, color: context.lume.inkMuted),
               ),
               const SizedBox(height: 26),
               if (isSignUp) ...[
@@ -118,7 +118,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       fontFamily: fontFamily,
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: LumeColors.primary,
+                      color: context.lume.primary,
                     ),
                   ),
                 ),
@@ -139,7 +139,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         fontFamily: fontFamily,
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: LumeColors.primary,
+                        color: context.lume.primary,
                       ),
                     ),
                   ),
@@ -149,7 +149,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 const SizedBox(height: 14),
                 Text(
                   'Ao criar sua conta você aceita os Termos e a Política de privacidade.',
-                  style: TextStyle(fontFamily: fontFamily, fontSize: 13, height: 1.5, color: LumeColors.inkMuted),
+                  style: TextStyle(fontFamily: fontFamily, fontSize: 13, height: 1.5, color: context.lume.inkMuted),
                 ),
               ],
               const SizedBox(height: 30),
@@ -163,7 +163,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     ? 'Seus dados são tratados conforme a LGPD (Lei 13.709/2018).'
                     : 'Protegemos seus dados conforme a LGPD.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontFamily: fontFamily, fontSize: 12, height: 1.5, color: LumeColors.inkMuted),
+                style: TextStyle(fontFamily: fontFamily, fontSize: 12, height: 1.5, color: context.lume.inkMuted),
               ),
             ],
           ),

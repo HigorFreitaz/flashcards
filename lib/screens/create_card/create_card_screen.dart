@@ -224,9 +224,9 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: Text('Cancelar', style: TextStyle(fontFamily: fontFamily, fontSize: 16, color: LumeColors.primary)),
+                    child: Text('Cancelar', style: TextStyle(fontFamily: fontFamily, fontSize: 16, color: context.lume.primary)),
                   ),
-                  Text(isEditing ? 'Editar cartão' : 'Novo cartão', style: TextStyle(fontFamily: fontFamily, fontSize: 16, fontWeight: FontWeight.w600, color: LumeColors.ink)),
+                  Text(isEditing ? 'Editar cartão' : 'Novo cartão', style: TextStyle(fontFamily: fontFamily, fontSize: 16, fontWeight: FontWeight.w600, color: context.lume.ink)),
                   const SizedBox(width: 62),
                 ],
               ),
@@ -244,8 +244,8 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         constraints: const BoxConstraints(minHeight: 60),
                         decoration: BoxDecoration(
-                          color: LumeColors.background,
-                          border: Border.all(color: LumeColors.outline),
+                          color: context.lume.background,
+                          border: Border.all(color: context.lume.outline),
                           borderRadius: BorderRadius.circular(LumeRadii.field),
                         ),
                         child: Row(
@@ -253,22 +253,22 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
                             Container(
                               width: 38,
                               height: 38,
-                              decoration: BoxDecoration(color: LumeColors.surface, borderRadius: BorderRadius.circular(13)),
+                              decoration: BoxDecoration(color: context.lume.surface, borderRadius: BorderRadius.circular(13)),
                               alignment: Alignment.center,
-                              child: Text(targetDeck.initials, style: TextStyle(fontFamily: fontFamily, fontSize: 13, fontWeight: FontWeight.w700, color: LumeColors.primary)),
+                              child: Text(targetDeck.initials, style: TextStyle(fontFamily: fontFamily, fontSize: 13, fontWeight: FontWeight.w700, color: context.lume.primary)),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('SALVAR EM', style: TextStyle(fontFamily: fontFamily, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.9, color: LumeColors.inkMuted)),
+                                  Text('SALVAR EM', style: TextStyle(fontFamily: fontFamily, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.9, color: context.lume.inkMuted)),
                                   const SizedBox(height: 3),
-                                  Text(targetDeck.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: fontFamily, fontSize: 15, fontWeight: FontWeight.w600, color: LumeColors.ink)),
+                                  Text(targetDeck.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: fontFamily, fontSize: 15, fontWeight: FontWeight.w600, color: context.lume.ink)),
                                 ],
                               ),
                             ),
-                            Text('Trocar', style: TextStyle(fontFamily: fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: LumeColors.primary)),
+                            Text('Trocar', style: TextStyle(fontFamily: fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: context.lume.primary)),
                           ],
                         ),
                       ),
@@ -329,8 +329,8 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('ALTERNATIVAS', style: TextStyle(fontFamily: fontFamily, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: LumeColors.inkMuted)),
-            Text('toque para marcar a correta', style: TextStyle(fontFamily: fontFamily, fontSize: 12, color: LumeColors.inkMuted)),
+            Text('ALTERNATIVAS', style: TextStyle(fontFamily: fontFamily, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: context.lume.inkMuted)),
+            Text('toque para marcar a correta', style: TextStyle(fontFamily: fontFamily, fontSize: 12, color: context.lume.inkMuted)),
           ],
         ),
         const SizedBox(height: 10),
@@ -344,8 +344,8 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
                 constraints: const BoxConstraints(minHeight: 58),
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 decoration: BoxDecoration(
-                  color: selected ? LumeColors.surface : LumeColors.background,
-                  border: Border.all(color: selected ? LumeColors.primary : LumeColors.outline, width: selected ? 1.5 : 1),
+                  color: selected ? context.lume.surface : context.lume.background,
+                  border: Border.all(color: selected ? context.lume.primary : context.lume.outline, width: selected ? 1.5 : 1),
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: Row(
@@ -353,15 +353,15 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
                     Container(
                       width: 26,
                       height: 26,
-                      decoration: BoxDecoration(color: selected ? LumeColors.primary : LumeColors.surface, borderRadius: BorderRadius.circular(9)),
+                      decoration: BoxDecoration(color: selected ? context.lume.primary : context.lume.surface, borderRadius: BorderRadius.circular(9)),
                       alignment: Alignment.center,
-                      child: Text(String.fromCharCode(65 + i), style: TextStyle(fontFamily: fontFamily, fontSize: 12, fontWeight: FontWeight.w700, color: selected ? LumeColors.background : LumeColors.inkMuted)),
+                      child: Text(String.fromCharCode(65 + i), style: TextStyle(fontFamily: fontFamily, fontSize: 12, fontWeight: FontWeight.w700, color: selected ? context.lume.background : context.lume.inkMuted)),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: TextField(
                         controller: _altControllers[i],
-                        style: TextStyle(fontFamily: fontFamily, fontSize: 16, color: LumeColors.ink),
+                        style: TextStyle(fontFamily: fontFamily, fontSize: 16, color: context.lume.ink),
                         decoration: const InputDecoration(isCollapsed: true, border: InputBorder.none),
                       ),
                     ),
@@ -382,7 +382,7 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
           children: [
             const _PulsingDot(),
             const SizedBox(width: 10),
-            Text('Lendo seu material…', style: TextStyle(fontFamily: fontFamily, fontSize: 14, fontWeight: FontWeight.w600, color: LumeColors.primary)),
+            Text('Lendo seu material…', style: TextStyle(fontFamily: fontFamily, fontSize: 14, fontWeight: FontWeight.w600, color: context.lume.primary)),
           ],
         ),
         const SizedBox(height: 14),
@@ -398,10 +398,10 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('${_generated.length} cartões gerados', style: TextStyle(fontFamily: fontFamily, fontSize: 15, fontWeight: FontWeight.w700, color: LumeColors.ink)),
+            Text('${_generated.length} cartões gerados', style: TextStyle(fontFamily: fontFamily, fontSize: 15, fontWeight: FontWeight.w700, color: context.lume.ink)),
             TextButton(
               onPressed: _generate,
-              child: Text('Refazer', style: TextStyle(fontFamily: fontFamily, fontSize: 14, fontWeight: FontWeight.w600, color: LumeColors.primary)),
+              child: Text('Refazer', style: TextStyle(fontFamily: fontFamily, fontSize: 14, fontWeight: FontWeight.w600, color: context.lume.primary)),
             ),
           ],
         ),
@@ -416,8 +416,8 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
               child: Container(
                 padding: const EdgeInsets.all(15),
                 decoration: BoxDecoration(
-                  color: LumeColors.background,
-                  border: Border.all(color: picked ? LumeColors.accent : LumeColors.outline),
+                  color: context.lume.background,
+                  border: Border.all(color: picked ? context.lume.accent : context.lume.outline),
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: Column(
@@ -431,21 +431,21 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
                           height: 22,
                           margin: const EdgeInsets.only(top: 2, right: 12),
                           decoration: BoxDecoration(
-                            color: picked ? LumeColors.primary : Colors.transparent,
-                            border: Border.all(color: picked ? LumeColors.primary : LumeColors.outline, width: 1.5),
+                            color: picked ? context.lume.primary : Colors.transparent,
+                            border: Border.all(color: picked ? context.lume.primary : context.lume.outline, width: 1.5),
                             borderRadius: BorderRadius.circular(7),
                           ),
-                          child: picked ? const Icon(Icons.check_rounded, size: 14, color: LumeColors.background) : null,
+                          child: picked ? Icon(Icons.check_rounded, size: 14, color: context.lume.background) : null,
                         ),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(g.tag, style: TextStyle(fontFamily: fontFamily, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.9, color: g.type == CardType.text ? LumeColors.inkMuted : LumeColors.primary)),
+                              Text(g.tag, style: TextStyle(fontFamily: fontFamily, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.9, color: g.type == CardType.text ? context.lume.inkMuted : context.lume.primary)),
                               const SizedBox(height: 6),
-                              Text(g.front, style: TextStyle(fontFamily: fontFamily, fontSize: 14, fontWeight: FontWeight.w600, height: 1.35, color: LumeColors.ink)),
+                              Text(g.front, style: TextStyle(fontFamily: fontFamily, fontSize: 14, fontWeight: FontWeight.w600, height: 1.35, color: context.lume.ink)),
                               const SizedBox(height: 4),
-                              Text(g.back, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: fontFamily, fontSize: 13, color: LumeColors.inkMuted)),
+                              Text(g.back, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: fontFamily, fontSize: 13, color: context.lume.inkMuted)),
                             ],
                           ),
                         ),
@@ -455,7 +455,7 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
                       const SizedBox(height: 12),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        decoration: BoxDecoration(color: LumeColors.surface, borderRadius: BorderRadius.circular(14)),
+                        decoration: BoxDecoration(color: context.lume.surface, borderRadius: BorderRadius.circular(14)),
                         child: Row(
                           children: [
                             GestureDetector(
@@ -463,12 +463,12 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
                               child: Container(
                                 width: 38,
                                 height: 38,
-                                decoration: const BoxDecoration(color: LumeColors.primary, shape: BoxShape.circle),
-                                child: const Icon(Icons.play_arrow_rounded, size: 14, color: LumeColors.background),
+                                decoration: BoxDecoration(color: context.lume.primary, shape: BoxShape.circle),
+                                child: Icon(Icons.play_arrow_rounded, size: 14, color: context.lume.background),
                               ),
                             ),
                             const SizedBox(width: 12),
-                            Expanded(child: Text('0:${g.audioSeconds.toString().padLeft(2, '0')}', style: TextStyle(fontFamily: fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: LumeColors.inkMuted))),
+                            Expanded(child: Text('0:${g.audioSeconds.toString().padLeft(2, '0')}', style: TextStyle(fontFamily: fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: context.lume.inkMuted))),
                           ],
                         ),
                       ),
@@ -478,12 +478,12 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        decoration: BoxDecoration(color: LumeColors.surface, borderRadius: BorderRadius.circular(14)),
+                        decoration: BoxDecoration(color: context.lume.surface, borderRadius: BorderRadius.circular(14)),
                         child: Column(
                           children: [
-                            const Icon(Icons.image_outlined, size: 22, color: LumeColors.inkMuted),
+                            Icon(Icons.image_outlined, size: 22, color: context.lume.inkMuted),
                             const SizedBox(height: 6),
-                            Text(g.mediaCaption ?? '', style: TextStyle(fontFamily: fontFamily, fontSize: 11, color: LumeColors.inkMuted)),
+                            Text(g.mediaCaption ?? '', style: TextStyle(fontFamily: fontFamily, fontSize: 11, color: context.lume.inkMuted)),
                           ],
                         ),
                       ),
@@ -501,15 +501,15 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         decoration: BoxDecoration(
-          color: LumeColors.surface,
+          color: context.lume.surface,
           borderRadius: BorderRadius.circular(22),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Anexe seu material', style: TextStyle(fontFamily: fontFamily, fontSize: 15, fontWeight: FontWeight.w600, color: LumeColors.ink)),
+            Text('Anexe seu material', style: TextStyle(fontFamily: fontFamily, fontSize: 15, fontWeight: FontWeight.w600, color: context.lume.ink)),
             const SizedBox(height: 4),
-            Text('Foto do caderno, áudio da aula, vídeo ou PDF.', style: TextStyle(fontFamily: fontFamily, fontSize: 13, height: 1.45, color: LumeColors.inkMuted)),
+            Text('Foto do caderno, áudio da aula, vídeo ou PDF.', style: TextStyle(fontFamily: fontFamily, fontSize: 13, height: 1.45, color: context.lume.inkMuted)),
             const SizedBox(height: 16),
             GridView.count(
               shrinkWrap: true,
@@ -529,13 +529,13 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
                     }
                   }),
                   child: Container(
-                    decoration: BoxDecoration(color: on ? LumeColors.primary : LumeColors.background, borderRadius: BorderRadius.circular(16)),
+                    decoration: BoxDecoration(color: on ? context.lume.primary : context.lume.background, borderRadius: BorderRadius.circular(16)),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(src.icon, size: 20, color: on ? LumeColors.background : LumeColors.ink),
+                        Icon(src.icon, size: 20, color: on ? context.lume.background : context.lume.ink),
                         const SizedBox(height: 5),
-                        Text(src.label, style: TextStyle(fontFamily: fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: on ? LumeColors.background : LumeColors.ink)),
+                        Text(src.label, style: TextStyle(fontFamily: fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: on ? context.lume.background : context.lume.ink)),
                       ],
                     ),
                   ),
@@ -551,30 +551,30 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
               padding: const EdgeInsets.only(bottom: 8),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(color: LumeColors.surface, borderRadius: BorderRadius.circular(16)),
+                decoration: BoxDecoration(color: context.lume.surface, borderRadius: BorderRadius.circular(16)),
                 child: Row(
                   children: [
                     Container(
                       width: 34,
                       height: 34,
-                      decoration: BoxDecoration(color: LumeColors.background, borderRadius: BorderRadius.circular(11)),
+                      decoration: BoxDecoration(color: context.lume.background, borderRadius: BorderRadius.circular(11)),
                       alignment: Alignment.center,
-                      child: Icon(src.icon, size: 16, color: LumeColors.ink),
+                      child: Icon(src.icon, size: 16, color: context.lume.ink),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(src.file, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: fontFamily, fontSize: 14, fontWeight: FontWeight.w600, color: LumeColors.ink)),
+                          Text(src.file, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: fontFamily, fontSize: 14, fontWeight: FontWeight.w600, color: context.lume.ink)),
                           const SizedBox(height: 2),
-                          Text(src.size, style: TextStyle(fontFamily: fontFamily, fontSize: 12, color: LumeColors.inkMuted)),
+                          Text(src.size, style: TextStyle(fontFamily: fontFamily, fontSize: 12, color: context.lume.inkMuted)),
                         ],
                       ),
                     ),
                     IconButton(
                       onPressed: () => setState(() => _attachSources.remove(src.id)),
-                      icon: const Icon(Icons.close_rounded, size: 18, color: LumeColors.inkMuted),
+                      icon: Icon(Icons.close_rounded, size: 18, color: context.lume.inkMuted),
                       tooltip: 'Remover anexo',
                     ),
                   ],
@@ -603,20 +603,20 @@ class _MultilineBox extends StatelessWidget {
       padding: const EdgeInsets.all(15),
       constraints: BoxConstraints(minHeight: minHeight),
       decoration: BoxDecoration(
-        color: LumeColors.background,
-        border: Border.all(color: LumeColors.outline),
+        color: context.lume.background,
+        border: Border.all(color: context.lume.outline),
         borderRadius: BorderRadius.circular(LumeRadii.field),
       ),
       child: TextField(
         controller: controller,
         minLines: 2,
         maxLines: 6,
-        style: TextStyle(fontFamily: fontFamily, fontSize: 17, height: 1.45, color: LumeColors.ink),
+        style: TextStyle(fontFamily: fontFamily, fontSize: 17, height: 1.45, color: context.lume.ink),
         decoration: InputDecoration(
           isCollapsed: true,
           border: InputBorder.none,
           hintText: placeholder,
-          hintStyle: TextStyle(fontFamily: fontFamily, fontSize: 17, height: 1.45, color: LumeColors.inkMuted),
+          hintStyle: TextStyle(fontFamily: fontFamily, fontSize: 17, height: 1.45, color: context.lume.inkMuted),
         ),
       ),
     );
@@ -643,7 +643,7 @@ class _PulsingDotState extends State<_PulsingDot> with SingleTickerProviderState
   Widget build(BuildContext context) {
     return FadeTransition(
       opacity: Tween(begin: 1.0, end: 0.35).animate(_controller),
-      child: Container(width: 8, height: 8, decoration: const BoxDecoration(color: LumeColors.primary, shape: BoxShape.circle)),
+      child: Container(width: 8, height: 8, decoration: BoxDecoration(color: context.lume.primary, shape: BoxShape.circle)),
     );
   }
 }
@@ -686,7 +686,7 @@ class _ShimmerBlockState extends State<_ShimmerBlock> with SingleTickerProviderS
             gradient: LinearGradient(
               begin: Alignment(-1 + _controller.value * 2, 0),
               end: Alignment(1 + _controller.value * 2, 0),
-              colors: const [LumeColors.surface, LumeColors.background, LumeColors.surface],
+              colors: [context.lume.surface, context.lume.background, context.lume.surface],
             ),
           ),
         );

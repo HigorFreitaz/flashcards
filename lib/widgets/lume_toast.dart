@@ -13,12 +13,12 @@ void showLumeToast(BuildContext context, String message) {
         duration: const Duration(milliseconds: 2800),
         content: Row(
           children: [
-            const Icon(Icons.check_rounded, size: 18, color: LumeColors.background),
+            Icon(Icons.check_rounded, size: 18, color: context.lume.background),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
                 message,
-                style: TextStyle(fontFamily: fontFamily, fontSize: 14, color: LumeColors.background),
+                style: TextStyle(fontFamily: fontFamily, fontSize: 14, color: context.lume.background),
               ),
             ),
           ],

@@ -82,27 +82,27 @@ class _LibraryScreenState extends State<LibraryScreen> {
               padding: const EdgeInsets.fromLTRB(4, 8, 4, 16),
               child: Text(
                 'Baralhos',
-                style: TextStyle(fontFamily: fontFamily, fontSize: 28, height: 1.15, fontWeight: FontWeight.w700, letterSpacing: -0.6, color: LumeColors.ink),
+                style: TextStyle(fontFamily: fontFamily, fontSize: 28, height: 1.15, fontWeight: FontWeight.w700, letterSpacing: -0.6, color: context.lume.ink),
               ),
             ),
             Container(
               height: 48,
               padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(color: LumeColors.surface, borderRadius: BorderRadius.circular(16)),
+              decoration: BoxDecoration(color: context.lume.surface, borderRadius: BorderRadius.circular(16)),
               child: Row(
                 children: [
-                  const Icon(Icons.search_rounded, size: 19, color: LumeColors.inkMuted),
+                  Icon(Icons.search_rounded, size: 19, color: context.lume.inkMuted),
                   const SizedBox(width: 10),
                   Expanded(
                     child: TextField(
                       controller: _searchController,
                       onChanged: (_) => setState(() {}),
-                      style: TextStyle(fontFamily: fontFamily, fontSize: 16, color: LumeColors.ink),
+                      style: TextStyle(fontFamily: fontFamily, fontSize: 16, color: context.lume.ink),
                       decoration: InputDecoration(
                         isCollapsed: true,
                         border: InputBorder.none,
                         hintText: 'Buscar baralhos e cartões',
-                        hintStyle: TextStyle(fontFamily: fontFamily, fontSize: 16, color: LumeColors.inkMuted),
+                        hintStyle: TextStyle(fontFamily: fontFamily, fontSize: 16, color: context.lume.inkMuted),
                       ),
                     ),
                   ),
@@ -112,9 +112,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
                       child: Container(
                         width: 28,
                         height: 28,
-                        decoration: const BoxDecoration(color: LumeColors.outline, shape: BoxShape.circle),
+                        decoration: BoxDecoration(color: context.lume.outline, shape: BoxShape.circle),
                         alignment: Alignment.center,
-                        child: const Icon(Icons.close_rounded, size: 16, color: LumeColors.ink),
+                        child: Icon(Icons.close_rounded, size: 16, color: context.lume.ink),
                       ),
                     ),
                 ],
@@ -136,7 +136,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
             Text(
               '${libraryEmpty ? 0 : decks.length} de ${app.decks.length} baralhos',
               textAlign: TextAlign.center,
-              style: TextStyle(fontFamily: fontFamily, fontSize: 13, color: LumeColors.inkMuted),
+              style: TextStyle(fontFamily: fontFamily, fontSize: 13, color: context.lume.inkMuted),
             ),
             const SizedBox(height: 14),
             if (libraryEmpty) _EmptyLibrary(fontFamily: fontFamily, onCreate: () => _createDeck(context)),
@@ -145,10 +145,10 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 40),
                 child: Column(
                   children: [
-                    Text('Nada encontrado', style: TextStyle(fontFamily: fontFamily, fontSize: 17, fontWeight: FontWeight.w600, color: LumeColors.ink)),
+                    Text('Nada encontrado', style: TextStyle(fontFamily: fontFamily, fontSize: 17, fontWeight: FontWeight.w600, color: context.lume.ink)),
                     const SizedBox(height: 8),
                     Text('Nenhum baralho corresponde a "${_searchController.text}".',
-                        textAlign: TextAlign.center, style: TextStyle(fontFamily: fontFamily, fontSize: 14, color: LumeColors.inkMuted)),
+                        textAlign: TextAlign.center, style: TextStyle(fontFamily: fontFamily, fontSize: 14, color: context.lume.inkMuted)),
                   ],
                 ),
               ),
@@ -166,8 +166,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _createDeck(context),
-        backgroundColor: LumeColors.primary,
-        foregroundColor: LumeColors.background,
+        backgroundColor: context.lume.primary,
+        foregroundColor: context.lume.background,
         icon: const Icon(Icons.add_rounded),
         label: const Text('Novo baralho'),
       ),
@@ -195,17 +195,17 @@ class _EmptyLibrary extends StatelessWidget {
             width: 64,
             height: 64,
             margin: const EdgeInsets.only(bottom: 20),
-            decoration: BoxDecoration(color: LumeColors.surface, borderRadius: BorderRadius.circular(20)),
-            child: const Icon(Icons.style_outlined, size: 28, color: LumeColors.inkMuted),
+            decoration: BoxDecoration(color: context.lume.surface, borderRadius: BorderRadius.circular(20)),
+            child: Icon(Icons.style_outlined, size: 28, color: context.lume.inkMuted),
           ),
-          Text('Sua biblioteca está vazia', style: TextStyle(fontFamily: fontFamily, fontSize: 19, fontWeight: FontWeight.w700, color: LumeColors.ink)),
+          Text('Sua biblioteca está vazia', style: TextStyle(fontFamily: fontFamily, fontSize: 19, fontWeight: FontWeight.w700, color: context.lume.ink)),
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Text(
               'Crie um baralho e depois adicione cartões digitando ou gerando com IA.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontFamily: fontFamily, fontSize: 15, height: 1.5, color: LumeColors.inkMuted),
+              style: TextStyle(fontFamily: fontFamily, fontSize: 15, height: 1.5, color: context.lume.inkMuted),
             ),
           ),
           const SizedBox(height: 24),
@@ -228,8 +228,8 @@ class _DeckRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: LumeColors.background,
-        border: Border.all(color: LumeColors.outline),
+        color: context.lume.background,
+        border: Border.all(color: context.lume.outline),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -245,9 +245,9 @@ class _DeckRow extends StatelessWidget {
                     Container(
                       width: 44,
                       height: 44,
-                      decoration: BoxDecoration(color: LumeColors.surface, borderRadius: BorderRadius.circular(15)),
+                      decoration: BoxDecoration(color: context.lume.surface, borderRadius: BorderRadius.circular(15)),
                       alignment: Alignment.center,
-                      child: Text(deck.initials, style: TextStyle(fontFamily: fontFamily, fontSize: 15, fontWeight: FontWeight.w700, color: LumeColors.primary)),
+                      child: Text(deck.initials, style: TextStyle(fontFamily: fontFamily, fontSize: 15, fontWeight: FontWeight.w700, color: context.lume.primary)),
                     ),
                     const SizedBox(width: 13),
                     Expanded(
@@ -258,7 +258,7 @@ class _DeckRow extends StatelessWidget {
                             deck.name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontFamily: fontFamily, fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: -0.2, color: LumeColors.ink),
+                            style: TextStyle(fontFamily: fontFamily, fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: -0.2, color: context.lume.ink),
                           ),
                           const SizedBox(height: 6),
                           Wrap(
@@ -270,7 +270,7 @@ class _DeckRow extends StatelessWidget {
                                 height: 24,
                                 padding: const EdgeInsets.symmetric(horizontal: 9),
                                 decoration: BoxDecoration(
-                                  color: deck.dueCount > 0 ? LumeColors.primary : LumeColors.surface,
+                                  color: deck.dueCount > 0 ? context.lume.primary : context.lume.surface,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 alignment: Alignment.center,
@@ -280,17 +280,17 @@ class _DeckRow extends StatelessWidget {
                                     fontFamily: fontFamily,
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
-                                    color: deck.dueCount > 0 ? LumeColors.background : LumeColors.inkMuted,
+                                    color: deck.dueCount > 0 ? context.lume.background : context.lume.inkMuted,
                                   ),
                                 ),
                               ),
                               if (deck.aiAssisted)
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                                  decoration: BoxDecoration(color: LumeColors.surface, borderRadius: BorderRadius.circular(6)),
-                                  child: Text('IA', style: TextStyle(fontFamily: fontFamily, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.6, color: LumeColors.primary)),
+                                  decoration: BoxDecoration(color: context.lume.surface, borderRadius: BorderRadius.circular(6)),
+                                  child: Text('IA', style: TextStyle(fontFamily: fontFamily, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.6, color: context.lume.primary)),
                                 ),
-                              Text('${deck.totalCount} cartões', style: TextStyle(fontFamily: fontFamily, fontSize: 13, color: LumeColors.inkMuted)),
+                              Text('${deck.totalCount} cartões', style: TextStyle(fontFamily: fontFamily, fontSize: 13, color: context.lume.inkMuted)),
                             ],
                           ),
                         ],
@@ -303,7 +303,7 @@ class _DeckRow extends StatelessWidget {
           ),
           IconButton(
             onPressed: onMenu,
-            icon: const Icon(Icons.more_vert_rounded, size: 20, color: LumeColors.inkMuted),
+            icon: Icon(Icons.more_vert_rounded, size: 20, color: context.lume.inkMuted),
             tooltip: 'Opções do baralho',
           ),
         ],

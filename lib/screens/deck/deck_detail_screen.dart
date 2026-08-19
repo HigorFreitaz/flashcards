@@ -128,12 +128,12 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
               const SizedBox(height: 6),
               Text(
                 deck.name,
-                style: TextStyle(fontFamily: fontFamily, fontSize: 26, height: 1.15, fontWeight: FontWeight.w700, letterSpacing: -0.6, color: LumeColors.ink),
+                style: TextStyle(fontFamily: fontFamily, fontSize: 26, height: 1.15, fontWeight: FontWeight.w700, letterSpacing: -0.6, color: context.lume.ink),
               ),
               const SizedBox(height: 6),
               Text(
                 '${deck.totalCount} cartões · atualizado ${_relativeUpdatedAt(deck.updatedAt)}',
-                style: TextStyle(fontFamily: fontFamily, fontSize: 14, color: LumeColors.inkMuted),
+                style: TextStyle(fontFamily: fontFamily, fontSize: 14, color: context.lume.inkMuted),
               ),
               const SizedBox(height: 20),
               Row(
@@ -173,15 +173,15 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
                 children: [
                   Text(
                     filterLabels[_filter]!,
-                    style: TextStyle(fontFamily: fontFamily, fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -0.3, color: LumeColors.ink),
+                    style: TextStyle(fontFamily: fontFamily, fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -0.3, color: context.lume.ink),
                   ),
                   if (_filter != null)
                     TextButton(
                       onPressed: () => setState(() => _filter = null),
-                      child: Text('Ver todos', style: TextStyle(fontFamily: fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: LumeColors.primary)),
+                      child: Text('Ver todos', style: TextStyle(fontFamily: fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: context.lume.primary)),
                     )
                   else
-                    Text('próximos ${visibleCards.length} de ${deck.totalCount}', style: TextStyle(fontFamily: fontFamily, fontSize: 13, color: LumeColors.inkMuted)),
+                    Text('próximos ${visibleCards.length} de ${deck.totalCount}', style: TextStyle(fontFamily: fontFamily, fontSize: 13, color: context.lume.inkMuted)),
                 ],
               ),
               const SizedBox(height: 12),
@@ -189,12 +189,12 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 34),
-                  decoration: BoxDecoration(color: LumeColors.surface, borderRadius: BorderRadius.circular(20)),
+                  decoration: BoxDecoration(color: context.lume.surface, borderRadius: BorderRadius.circular(20)),
                   child: Column(
                     children: [
-                      Text('Nenhum cartão aqui', style: TextStyle(fontFamily: fontFamily, fontSize: 16, fontWeight: FontWeight.w700, color: LumeColors.ink)),
+                      Text('Nenhum cartão aqui', style: TextStyle(fontFamily: fontFamily, fontSize: 16, fontWeight: FontWeight.w700, color: context.lume.ink)),
                       const SizedBox(height: 7),
-                      Text('Use o botão "Novo cartão" para começar.', style: TextStyle(fontFamily: fontFamily, fontSize: 14, color: LumeColors.inkMuted)),
+                      Text('Use o botão "Novo cartão" para começar.', style: TextStyle(fontFamily: fontFamily, fontSize: 14, color: context.lume.inkMuted)),
                     ],
                   ),
                 )
@@ -223,8 +223,8 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => CreateCardScreen(deckId: deck.id))),
-        backgroundColor: LumeColors.primary,
-        foregroundColor: LumeColors.background,
+        backgroundColor: context.lume.primary,
+        foregroundColor: context.lume.background,
         icon: const Icon(Icons.add_rounded),
         label: const Text('Novo cartão'),
       ),
@@ -253,8 +253,8 @@ class _StatChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fontFamily = Theme.of(context).textTheme.bodyMedium?.fontFamily;
-    final background = selected ? LumeColors.primary : LumeColors.surface;
-    final foreground = selected ? LumeColors.background : (emphasis ? LumeColors.primary : LumeColors.ink);
+    final background = selected ? context.lume.primary : context.lume.surface;
+    final foreground = selected ? context.lume.background : (emphasis ? context.lume.primary : context.lume.ink);
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -263,14 +263,14 @@ class _StatChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: background,
           borderRadius: BorderRadius.circular(16),
-          border: selected ? Border.all(color: LumeColors.primary, width: 1.5) : null,
+          border: selected ? Border.all(color: context.lume.primary, width: 1.5) : null,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('$value', style: TextStyle(fontFamily: fontFamily, fontSize: 19, fontWeight: FontWeight.w700, color: foreground)),
             const SizedBox(height: 3),
-            Text(label, style: TextStyle(fontFamily: fontFamily, fontSize: 12, color: selected ? LumeColors.background : LumeColors.inkMuted)),
+            Text(label, style: TextStyle(fontFamily: fontFamily, fontSize: 12, color: selected ? context.lume.background : context.lume.inkMuted)),
           ],
         ),
       ),
@@ -286,14 +286,14 @@ class _CardRow extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onMenu;
 
-  Color get _dotColor {
+  Color _dotColor(BuildContext context) {
     switch (card.status) {
       case CardStatus.aRevisar:
-        return LumeColors.primary;
+        return context.lume.primary;
       case CardStatus.novo:
-        return LumeColors.outline;
+        return context.lume.outline;
       case CardStatus.dominado:
-        return LumeColors.accent;
+        return context.lume.accent;
     }
   }
 
@@ -301,8 +301,8 @@ class _CardRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: LumeColors.background,
-        border: Border.all(color: LumeColors.outline),
+        color: context.lume.background,
+        border: Border.all(color: context.lume.outline),
         borderRadius: BorderRadius.circular(LumeRadii.listRow),
       ),
       child: Row(
@@ -320,7 +320,7 @@ class _CardRow extends StatelessWidget {
                       width: 8,
                       height: 8,
                       margin: const EdgeInsets.only(top: 6, right: 12),
-                      decoration: BoxDecoration(color: _dotColor, shape: BoxShape.circle),
+                      decoration: BoxDecoration(color: _dotColor(context), shape: BoxShape.circle),
                     ),
                     Expanded(
                       child: Column(
@@ -330,14 +330,14 @@ class _CardRow extends StatelessWidget {
                             card.front,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontFamily: fontFamily, fontSize: 15, fontWeight: FontWeight.w600, height: 1.35, color: LumeColors.ink),
+                            style: TextStyle(fontFamily: fontFamily, fontSize: 15, fontWeight: FontWeight.w600, height: 1.35, color: context.lume.ink),
                           ),
                           const SizedBox(height: 5),
                           Text(
                             card.back,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontFamily: fontFamily, fontSize: 13, color: LumeColors.inkMuted),
+                            style: TextStyle(fontFamily: fontFamily, fontSize: 13, color: context.lume.inkMuted),
                           ),
                         ],
                       ),

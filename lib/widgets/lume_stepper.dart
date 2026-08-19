@@ -25,8 +25,8 @@ class LumeStepper extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: LumeColors.background,
-        border: Border.all(color: LumeColors.outline),
+        color: context.lume.background,
+        border: Border.all(color: context.lume.outline),
         borderRadius: BorderRadius.circular(LumeRadii.field),
       ),
       child: Row(
@@ -48,13 +48,13 @@ class LumeStepper extends StatelessWidget {
                     fontSize: 28,
                     fontWeight: FontWeight.w700,
                     height: 1.1,
-                    color: LumeColors.ink,
+                    color: context.lume.ink,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   caption,
-                  style: TextStyle(fontFamily: fontFamily, fontSize: 12, color: LumeColors.inkMuted),
+                  style: TextStyle(fontFamily: fontFamily, fontSize: 12, color: context.lume.inkMuted),
                 ),
               ],
             ),

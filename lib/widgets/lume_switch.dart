@@ -31,15 +31,15 @@ class LumeSwitch extends StatelessWidget {
           height: 32,
           padding: const EdgeInsets.all(3),
           decoration: BoxDecoration(
-            color: value ? LumeColors.primary : LumeColors.outline,
+            color: value ? context.lume.primary : context.lume.outline,
             borderRadius: BorderRadius.circular(16),
           ),
           alignment: value ? Alignment.centerRight : Alignment.centerLeft,
           child: Container(
             width: 26,
             height: 26,
-            decoration: const BoxDecoration(
-              color: LumeColors.background,
+            decoration: BoxDecoration(
+              color: context.lume.background,
               shape: BoxShape.circle,
             ),
           ),

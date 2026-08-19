@@ -25,13 +25,13 @@ class WeekStreakRow extends StatelessWidget {
               width: 34,
               height: 34,
               decoration: BoxDecoration(
-                color: done ? LumeColors.primary : LumeColors.surface,
+                color: done ? context.lume.primary : context.lume.surface,
                 shape: BoxShape.circle,
-                border: isToday ? Border.all(color: LumeColors.accent, width: 2) : null,
+                border: isToday ? Border.all(color: context.lume.accent, width: 2) : null,
               ),
               alignment: Alignment.center,
               child: done
-                  ? const Icon(Icons.check_rounded, size: 16, color: LumeColors.background)
+                  ? Icon(Icons.check_rounded, size: 16, color: context.lume.background)
                   : null,
             ),
             const SizedBox(height: 7),
@@ -41,7 +41,7 @@ class WeekStreakRow extends StatelessWidget {
                 fontFamily: fontFamily,
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: LumeColors.inkMuted,
+                color: context.lume.inkMuted,
               ),
             ),
           ],

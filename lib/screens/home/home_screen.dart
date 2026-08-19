@@ -46,18 +46,18 @@ class HomeScreen extends StatelessWidget {
                     children: [
                       Text(
                         formatLongDatePtBr(DateTime.now()),
-                        style: TextStyle(fontFamily: fontFamily, fontSize: 13, fontWeight: FontWeight.w500, color: LumeColors.inkMuted),
+                        style: TextStyle(fontFamily: fontFamily, fontSize: 13, fontWeight: FontWeight.w500, color: context.lume.inkMuted),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${greetingForHour(DateTime.now().hour)}, Ana',
+                        '${greetingForHour(DateTime.now().hour)}, ${app.currentUser.firstName}',
                         style: TextStyle(
                           fontFamily: fontFamily,
                           fontSize: 28,
                           height: 1.15,
                           fontWeight: FontWeight.w700,
                           letterSpacing: -0.6,
-                          color: LumeColors.ink,
+                          color: context.lume.ink,
                         ),
                       ),
                     ],
@@ -100,13 +100,13 @@ class HomeScreen extends StatelessWidget {
               children: [
                 Text(
                   'Continuar',
-                  style: TextStyle(fontFamily: fontFamily, fontSize: 19, fontWeight: FontWeight.w700, letterSpacing: -0.3, color: LumeColors.ink),
+                  style: TextStyle(fontFamily: fontFamily, fontSize: 19, fontWeight: FontWeight.w700, letterSpacing: -0.3, color: context.lume.ink),
                 ),
                 TextButton(
                   onPressed: onGoToLibraryTab,
                   child: Text(
                     'Ver tudo',
-                    style: TextStyle(fontFamily: fontFamily, fontSize: 14, fontWeight: FontWeight.w600, color: LumeColors.primary),
+                    style: TextStyle(fontFamily: fontFamily, fontSize: 14, fontWeight: FontWeight.w600, color: context.lume.primary),
                   ),
                 ),
               ],
@@ -140,14 +140,14 @@ class _AlertsButton extends StatelessWidget {
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: LumeColors.background,
-          border: Border.all(color: LumeColors.outline),
+          color: context.lume.background,
+          border: Border.all(color: context.lume.outline),
           borderRadius: BorderRadius.circular(15),
         ),
         child: Stack(
           alignment: Alignment.center,
           children: [
-            const Icon(Icons.notifications_none_rounded, size: 21, color: LumeColors.ink),
+            Icon(Icons.notifications_none_rounded, size: 21, color: context.lume.ink),
             if (unread)
               Positioned(
                 top: 9,
@@ -156,9 +156,9 @@ class _AlertsButton extends StatelessWidget {
                   width: 8,
                   height: 8,
                   decoration: BoxDecoration(
-                    color: LumeColors.primary,
+                    color: context.lume.primary,
                     shape: BoxShape.circle,
-                    border: Border.all(color: LumeColors.background, width: 2),
+                    border: Border.all(color: context.lume.background, width: 2),
                   ),
                 ),
               ),
@@ -181,7 +181,7 @@ class _DailyGoalCard extends StatelessWidget {
     final fontFamily = Theme.of(context).textTheme.bodyMedium?.fontFamily;
     return Container(
       padding: const EdgeInsets.all(LumeSpacing.cardPadding),
-      decoration: BoxDecoration(color: LumeColors.primary, borderRadius: BorderRadius.circular(LumeRadii.card)),
+      decoration: BoxDecoration(color: context.lume.primary, borderRadius: BorderRadius.circular(LumeRadii.card)),
       child: Column(
         children: [
           Row(
@@ -189,11 +189,11 @@ class _DailyGoalCard extends StatelessWidget {
               ProgressRing(
                 percent: percent,
                 size: 76,
-                trackColor: LumeColors.background.withValues(alpha: 0.25),
-                progressColor: LumeColors.background,
+                trackColor: context.lume.background.withValues(alpha: 0.25),
+                progressColor: context.lume.background,
                 child: Text(
                   '${(percent * 100).round()}%',
-                  style: TextStyle(fontFamily: fontFamily, fontSize: 17, fontWeight: FontWeight.w700, color: LumeColors.background),
+                  style: TextStyle(fontFamily: fontFamily, fontSize: 17, fontWeight: FontWeight.w700, color: context.lume.background),
                 ),
               ),
               const SizedBox(width: 18),
@@ -202,13 +202,13 @@ class _DailyGoalCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('Meta de hoje',
-                        style: TextStyle(fontFamily: fontFamily, fontSize: 15, fontWeight: FontWeight.w500, color: LumeColors.background.withValues(alpha: 0.8))),
+                        style: TextStyle(fontFamily: fontFamily, fontSize: 15, fontWeight: FontWeight.w500, color: context.lume.background.withValues(alpha: 0.8))),
                     const SizedBox(height: 5),
                     Text('$dueToday cartões',
-                        style: TextStyle(fontFamily: fontFamily, fontSize: 26, fontWeight: FontWeight.w700, letterSpacing: -0.5, height: 1.1, color: LumeColors.background)),
+                        style: TextStyle(fontFamily: fontFamily, fontSize: 26, fontWeight: FontWeight.w700, letterSpacing: -0.5, height: 1.1, color: context.lume.background)),
                     const SizedBox(height: 5),
                     Text('prontos para revisar',
-                        style: TextStyle(fontFamily: fontFamily, fontSize: 14, color: LumeColors.background.withValues(alpha: 0.8))),
+                        style: TextStyle(fontFamily: fontFamily, fontSize: 14, color: context.lume.background.withValues(alpha: 0.8))),
                   ],
                 ),
               ),
@@ -238,8 +238,8 @@ class _StreakCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: LumeColors.background,
-        border: Border.all(color: LumeColors.outline),
+        color: context.lume.background,
+        border: Border.all(color: context.lume.outline),
         borderRadius: BorderRadius.circular(22),
       ),
       child: Column(
@@ -248,12 +248,12 @@ class _StreakCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Sequência de ${app.streakDays} dias',
-                  style: TextStyle(fontFamily: fontFamily, fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: LumeColors.ink)),
+                  style: TextStyle(fontFamily: fontFamily, fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: context.lume.ink)),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                decoration: BoxDecoration(color: LumeColors.surface, borderRadius: BorderRadius.circular(10)),
+                decoration: BoxDecoration(color: context.lume.surface, borderRadius: BorderRadius.circular(10)),
                 child: Text('Nível ${app.level}',
-                    style: TextStyle(fontFamily: fontFamily, fontSize: 12, fontWeight: FontWeight.w700, color: LumeColors.primary)),
+                    style: TextStyle(fontFamily: fontFamily, fontSize: 12, fontWeight: FontWeight.w700, color: context.lume.primary)),
               ),
             ],
           ),
@@ -263,9 +263,9 @@ class _StreakCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('${app.totalXp} XP', style: TextStyle(fontFamily: fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: LumeColors.inkMuted)),
+              Text('${app.totalXp} XP', style: TextStyle(fontFamily: fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: context.lume.inkMuted)),
               Text('faltam ${app.xpToNextLevel} para o nível ${app.level + 1}',
-                  style: TextStyle(fontFamily: fontFamily, fontSize: 13, color: LumeColors.inkMuted)),
+                  style: TextStyle(fontFamily: fontFamily, fontSize: 13, color: context.lume.inkMuted)),
             ],
           ),
           const SizedBox(height: 8),
@@ -277,8 +277,8 @@ class _StreakCard extends StatelessWidget {
               builder: (context, value, _) => LinearProgressIndicator(
                 value: value,
                 minHeight: 8,
-                backgroundColor: LumeColors.surface,
-                color: LumeColors.accent,
+                backgroundColor: context.lume.surface,
+                color: context.lume.accent,
               ),
             ),
           ),
@@ -301,8 +301,8 @@ class _StatTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: LumeColors.background,
-        border: Border.all(color: LumeColors.outline),
+        color: context.lume.background,
+        border: Border.all(color: context.lume.outline),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
@@ -310,7 +310,7 @@ class _StatTile extends StatelessWidget {
         children: [
           RichText(
             text: TextSpan(
-              style: TextStyle(fontFamily: fontFamily, fontSize: 21, fontWeight: FontWeight.w700, letterSpacing: -0.3, color: LumeColors.ink),
+              style: TextStyle(fontFamily: fontFamily, fontSize: 21, fontWeight: FontWeight.w700, letterSpacing: -0.3, color: context.lume.ink),
               children: [
                 TextSpan(text: value),
                 if (suffix != null) TextSpan(text: suffix, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
@@ -318,7 +318,7 @@ class _StatTile extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 3),
-          Text(label, style: TextStyle(fontFamily: fontFamily, fontSize: 12, color: LumeColors.inkMuted)),
+          Text(label, style: TextStyle(fontFamily: fontFamily, fontSize: 12, color: context.lume.inkMuted)),
         ],
       ),
     );
@@ -337,7 +337,7 @@ class _ChallengeTeaser extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-        decoration: BoxDecoration(color: LumeColors.surface, borderRadius: BorderRadius.circular(20)),
+        decoration: BoxDecoration(color: context.lume.surface, borderRadius: BorderRadius.circular(20)),
         child: Row(
           children: [
             Expanded(
@@ -345,16 +345,16 @@ class _ChallengeTeaser extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('DESAFIO DA SEMANA',
-                      style: TextStyle(fontFamily: fontFamily, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1, color: LumeColors.primary)),
+                      style: TextStyle(fontFamily: fontFamily, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1, color: context.lume.primary)),
                   const SizedBox(height: 6),
                   Text('11 de 15 perguntas respondidas',
-                      style: TextStyle(fontFamily: fontFamily, fontSize: 15, fontWeight: FontWeight.w600, height: 1.35, color: LumeColors.ink)),
+                      style: TextStyle(fontFamily: fontFamily, fontSize: 15, fontWeight: FontWeight.w600, height: 1.35, color: context.lume.ink)),
                   const SizedBox(height: 4),
-                  Text('Termina em 2 dias · +250 XP', style: TextStyle(fontFamily: fontFamily, fontSize: 13, color: LumeColors.inkMuted)),
+                  Text('Termina em 2 dias · +250 XP', style: TextStyle(fontFamily: fontFamily, fontSize: 13, color: context.lume.inkMuted)),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, color: LumeColors.primary),
+            Icon(Icons.chevron_right_rounded, color: context.lume.primary),
           ],
         ),
       ),
@@ -377,8 +377,8 @@ class _ContinueDeckCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: LumeColors.background,
-          border: Border.all(color: LumeColors.outline),
+          color: context.lume.background,
+          border: Border.all(color: context.lume.outline),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
@@ -393,17 +393,17 @@ class _ContinueDeckCard extends StatelessWidget {
                       Text(deck.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontFamily: fontFamily, fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: -0.2, color: LumeColors.ink)),
+                          style: TextStyle(fontFamily: fontFamily, fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: -0.2, color: context.lume.ink)),
                       const SizedBox(height: 4),
                       Text('${deck.totalCount} cartões',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontFamily: fontFamily, fontSize: 13, color: LumeColors.inkMuted)),
+                          style: TextStyle(fontFamily: fontFamily, fontSize: 13, color: context.lume.inkMuted)),
                     ],
                   ),
                 ),
                 Text('${(percent * 100).round()}%',
-                    style: TextStyle(fontFamily: fontFamily, fontSize: 13, fontWeight: FontWeight.w700, color: LumeColors.primary)),
+                    style: TextStyle(fontFamily: fontFamily, fontSize: 13, fontWeight: FontWeight.w700, color: context.lume.primary)),
               ],
             ),
             const SizedBox(height: 12),
@@ -412,8 +412,8 @@ class _ContinueDeckCard extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: percent,
                 minHeight: 6,
-                backgroundColor: LumeColors.surface,
-                color: LumeColors.accent,
+                backgroundColor: context.lume.surface,
+                color: context.lume.accent,
               ),
             ),
           ],

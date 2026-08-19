@@ -26,7 +26,7 @@ class LumeSegmentedTabs<T> extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: LumeColors.surface,
+        color: context.lume.surface,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -40,12 +40,12 @@ class LumeSegmentedTabs<T> extends StatelessWidget {
                 curve: LumeMotion.curve,
                 height: 46,
                 decoration: BoxDecoration(
-                  color: selected ? LumeColors.background : Colors.transparent,
+                  color: selected ? context.lume.background : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: selected
                       ? [
                           BoxShadow(
-                            color: LumeColors.ink.withValues(alpha: 0.12),
+                            color: context.lume.ink.withValues(alpha: 0.12),
                             blurRadius: 3,
                             offset: const Offset(0, 1),
                           ),
@@ -59,7 +59,7 @@ class LumeSegmentedTabs<T> extends StatelessWidget {
                     fontFamily: fontFamily,
                     fontSize: 15,
                     fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                    color: selected ? LumeColors.primary : LumeColors.inkMuted,
+                    color: selected ? context.lume.primary : context.lume.inkMuted,
                   ),
                 ),
               ),
