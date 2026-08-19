@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../models/app_notification.dart';
+import '../models/app_user.dart';
 import '../models/challenge_history_entry.dart';
 import '../models/deck.dart';
 import '../models/flashcard.dart';
@@ -21,6 +22,13 @@ class AppState extends ChangeNotifier {
   final List<Deck> decks = [];
   final List<AppNotification> notifications = [];
   final List<ChallengeHistoryEntry> challengeHistory = [];
+
+  AppUser currentUser = AppUser(name: 'Ana Ribeiro', email: 'ana.ribeiro@exemplo.com');
+
+  ThemeMode themeMode = ThemeMode.light;
+  bool get isDarkMode => themeMode == ThemeMode.dark;
+
+  bool biometricLockEnabled = false;
 
   final int streakDays = 12;
   final int level = 7;
@@ -57,6 +65,22 @@ class AppState extends ChangeNotifier {
       _toastMessage = null;
       notifyListeners();
     });
+  }
+
+  void setDarkModeEnabled(bool enabled) {
+    themeMode = enabled ? ThemeMode.dark : ThemeMode.light;
+    notifyListeners();
+  }
+
+  void setBiometricLockEnabled(bool enabled) {
+    biometricLockEnabled = enabled;
+    notifyListeners();
+  }
+
+  void updateProfile({String? name, String? email}) {
+    if (name != null && name.trim().isNotEmpty) currentUser.name = name.trim();
+    if (email != null && email.trim().isNotEmpty) currentUser.email = email.trim();
+    notifyListeners();
   }
 
   Deck createDeck({
@@ -148,6 +172,25 @@ class AppState extends ChangeNotifier {
 
   void joinChallenge() {
     challengeJoined = true;
+    notifyListeners();
+  }
+
+  /// Apaga a conta: some com os baralhos, cartões e progresso, e devolve o
+  /// app ao estado de uma instalação nova.
+  void deleteAccount() {
+    decks
+      ..clear()
+      ..addAll(_seedDecks());
+    notifications
+      ..clear()
+      ..addAll(_seedNotifications());
+    challengeHistory
+      ..clear()
+      ..addAll(_seedChallengeHistory());
+    currentUser = AppUser(name: 'Ana Ribeiro', email: 'ana.ribeiro@exemplo.com');
+    themeMode = ThemeMode.light;
+    biometricLockEnabled = false;
+    challengeJoined = false;
     notifyListeners();
   }
 

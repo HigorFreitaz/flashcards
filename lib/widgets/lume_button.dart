@@ -42,7 +42,9 @@ class _PressableScaleState extends State<_PressableScale> {
   }
 }
 
-enum LumeButtonVariant { primary, secondary, text }
+enum LumeButtonVariant { primary, secondary, text, danger }
+
+const _dangerColor = Color(0xFFB3261E);
 
 class LumeButton extends StatelessWidget {
   const LumeButton({
@@ -71,19 +73,24 @@ class LumeButton extends StatelessWidget {
 
     switch (variant) {
       case LumeButtonVariant.primary:
-        background = disabled ? LumeColors.outline : LumeColors.primary;
-        foreground = LumeColors.background;
+        background = disabled ? context.lume.outline : context.lume.primary;
+        foreground = context.lume.background;
         border = null;
         break;
       case LumeButtonVariant.secondary:
-        background = LumeColors.background;
-        foreground = disabled ? LumeColors.inkMuted : LumeColors.primary;
-        border = Border.all(color: LumeColors.outline);
+        background = context.lume.background;
+        foreground = disabled ? context.lume.inkMuted : context.lume.primary;
+        border = Border.all(color: context.lume.outline);
         break;
       case LumeButtonVariant.text:
         background = Colors.transparent;
-        foreground = disabled ? LumeColors.inkMuted : LumeColors.primary;
+        foreground = disabled ? context.lume.inkMuted : context.lume.primary;
         border = null;
+        break;
+      case LumeButtonVariant.danger:
+        background = context.lume.background;
+        foreground = disabled ? context.lume.inkMuted : _dangerColor;
+        border = Border.all(color: disabled ? context.lume.outline : _dangerColor);
     }
 
     final content = Container(
@@ -150,12 +157,12 @@ class LumeIconButton extends StatelessWidget {
           width: size,
           height: size,
           decoration: BoxDecoration(
-            color: filled ? LumeColors.background : Colors.transparent,
-            border: filled ? Border.all(color: LumeColors.outline) : null,
+            color: filled ? context.lume.background : Colors.transparent,
+            border: filled ? Border.all(color: context.lume.outline) : null,
             borderRadius: BorderRadius.circular(size * 0.34),
           ),
           alignment: Alignment.center,
-          child: Icon(icon, size: 21, color: LumeColors.ink),
+          child: Icon(icon, size: 21, color: context.lume.ink),
         ),
       ),
     );
