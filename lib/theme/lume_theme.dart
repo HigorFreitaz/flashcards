@@ -69,11 +69,5 @@ ThemeData buildLumeTheme([TargetPlatform? platform]) {
         vertical: LumeSpacing.screenMargin,
       ),
     ),
-    pageTransitionsTheme: const PageTransitionsTheme(
-      builders: {
-        TargetPlatform.android: ZoomPageTransitionsBuilder(),
-        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-      },
-    ),
   );
 }
