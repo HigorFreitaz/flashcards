@@ -22,10 +22,12 @@ class SettingsScreen extends StatelessWidget {
       actions: const [LumeSheetAction(label: 'Sair da conta', danger: true)],
     );
     if (choice != 0 || !context.mounted) return;
+    final appState = context.read<AppState>();
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const AuthScreen()),
           (route) => false,
     );
+    appState.currentUser = null;
   }
 
   @override
@@ -53,7 +55,7 @@ class SettingsScreen extends StatelessWidget {
           ),
           const LumeFieldLabel('Conta'),
           _AccountRow(
-            user: app.currentUser,
+            user: app.currentUser!,
             onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AccountScreen())),
           ),
           const SizedBox(height: LumeSpacing.section),

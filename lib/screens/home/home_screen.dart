@@ -50,7 +50,7 @@ class HomeScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${greetingForHour(DateTime.now().hour)}, ${app.currentUser.firstName}',
+                        '${greetingForHour(DateTime.now().hour)}, ${app.currentUser!.firstName}',
                         style: TextStyle(
                           fontFamily: fontFamily,
                           fontSize: 28,

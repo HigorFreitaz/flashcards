@@ -26,7 +26,7 @@ class _AccountScreenState extends State<AccountScreen> {
   @override
   void initState() {
     super.initState();
-    final user = context.read<AppState>().currentUser;
+    final user = context.read<AppState>().currentUser!;
     _nameController.text = user.name;
     _emailController.text = user.email;
   }
