@@ -7,6 +7,7 @@ import '../../widgets/lume_button.dart';
 import '../../widgets/lume_text_field.dart';
 import '../../widgets/lume_toast.dart';
 import '../auth/auth_screen.dart';
+import '../../theme/lume_theme.dart';
 
 /// Gerenciamento da conta — nome, e-mail, senha e a exclusão da conta.
 class AccountScreen extends StatefulWidget {

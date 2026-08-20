@@ -77,3 +77,6 @@ ThemeData buildLumeTheme({TargetPlatform? platform, Brightness brightness = Brig
     ),
   );
 }
+extension LumeThemeExtension on BuildContext {
+  LumeColors get lume => Theme.of(this).extension<LumeColors>()!;
+}

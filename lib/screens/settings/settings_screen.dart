@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../models/app_user.dart';
 import '../../state/app_state.dart';
 import '../../theme/lume_metrics.dart';
+import '../../theme/lume_theme.dart'; // <-- Add the file that contains the BuildContext extension here
 import '../../widgets/lume_bottom_sheet.dart';
 import '../../widgets/lume_button.dart';
 import '../../widgets/lume_switch.dart';
@@ -23,7 +24,7 @@ class SettingsScreen extends StatelessWidget {
     if (choice != 0 || !context.mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const AuthScreen()),
-      (route) => false,
+          (route) => false,
     );
   }
 
