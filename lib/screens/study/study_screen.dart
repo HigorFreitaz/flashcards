@@ -10,7 +10,7 @@ import '../../state/app_state.dart';
 import '../../theme/lume_colors.dart';
 import '../../theme/lume_metrics.dart';
 import '../../theme/lume_motion.dart';
-import '../../widgets/lume_button.dart';
+import '../../widgets/buttons/lume_button.dart';
 
 /// Um cartão amarrado ao baralho de origem — para que a resposta seja
 /// registrada no lugar certo mesmo numa sessão que mistura vários baralhos.

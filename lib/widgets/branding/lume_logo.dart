@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../theme/lume_colors.dart';
+import '../../theme/lume_colors.dart';
 
 /// O símbolo da marca: dois cartões deslocados — o da frente claro, o de
 /// trás em accent — dentro de um quadrado de canto contínuo.

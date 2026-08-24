@@ -4,8 +4,8 @@ import 'package:provider/provider.dart';
 import '../../models/app_notification.dart';
 import '../../state/app_state.dart';
 import '../../theme/lume_colors.dart';
-import '../../widgets/lume_button.dart';
-import '../../widgets/lume_toast.dart';
+import '../../widgets/buttons/lume_button.dart';
+import '../../widgets/feedback/lume_toast.dart';
 
 class AlertsScreen extends StatelessWidget {
   const AlertsScreen({super.key});

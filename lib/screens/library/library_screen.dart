@@ -4,10 +4,10 @@ import 'package:provider/provider.dart';
 import '../../models/deck.dart';
 import '../../state/app_state.dart';
 import '../../theme/lume_colors.dart';
-import '../../widgets/lume_bottom_sheet.dart';
-import '../../widgets/lume_button.dart';
-import '../../widgets/lume_chip.dart';
-import '../../widgets/lume_toast.dart';
+import '../../widgets/feedback/lume_bottom_sheet.dart';
+import '../../widgets/buttons/lume_button.dart';
+import '../../widgets/chips/lume_chip.dart';
+import '../../widgets/feedback/lume_toast.dart';
 import '../deck/deck_detail_screen.dart';
 import '../deck/deck_form_screen.dart';
 

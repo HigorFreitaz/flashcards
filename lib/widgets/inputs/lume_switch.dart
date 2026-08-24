@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../theme/lume_colors.dart';
-import '../theme/lume_motion.dart';
+import '../../theme/lume_colors.dart';
+import '../../theme/lume_motion.dart';
 
 /// Interruptor 56×32 do kit de design — trilha colorida, disco branco.
 class LumeSwitch extends StatelessWidget {

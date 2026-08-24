@@ -4,12 +4,12 @@ import 'package:provider/provider.dart';
 import '../../state/app_state.dart';
 import '../../theme/lume_colors.dart';
 import '../../theme/lume_metrics.dart';
-import '../../widgets/lume_button.dart';
-import '../../widgets/lume_chip.dart';
-import '../../widgets/lume_segmented_tabs.dart';
-import '../../widgets/lume_switch.dart';
-import '../../widgets/lume_text_field.dart';
-import '../../widgets/lume_toast.dart';
+import '../../widgets/buttons/lume_button.dart';
+import '../../widgets/chips/lume_chip.dart';
+import '../../widgets/navigation/lume_segmented_tabs.dart';
+import '../../widgets/inputs/lume_switch.dart';
+import '../../widgets/inputs/lume_text_field.dart';
+import '../../widgets/feedback/lume_toast.dart';
 import '../study/study_screen.dart';
 
 enum _ChallengeTab { fromAI, own }

@@ -4,10 +4,10 @@ import 'package:provider/provider.dart';
 import '../../models/app_user.dart';
 import '../../state/app_state.dart';
 import '../../theme/lume_metrics.dart';
-import '../../widgets/lume_bottom_sheet.dart';
-import '../../widgets/lume_button.dart';
-import '../../widgets/lume_switch.dart';
-import '../../widgets/lume_text_field.dart';
+import '../../widgets/feedback/lume_bottom_sheet.dart';
+import '../../widgets/buttons/lume_button.dart';
+import '../../widgets/inputs/lume_switch.dart';
+import '../../widgets/inputs/lume_text_field.dart';
 import '../auth/auth_screen.dart';
 import 'account_screen.dart';
 

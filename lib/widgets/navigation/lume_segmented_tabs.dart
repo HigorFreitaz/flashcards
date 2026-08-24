@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../theme/lume_colors.dart';
-import '../theme/lume_metrics.dart';
-import '../theme/lume_motion.dart';
+import '../../theme/lume_colors.dart';
+import '../../theme/lume_metrics.dart';
+import '../../theme/lume_motion.dart';
 
 /// Alternador de duas ou três opções em pílula — usado em Entrar/Criar
 /// conta, Digitar/Gerar com IA, tipo de resposta etc.

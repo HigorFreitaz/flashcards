@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../theme/lume_colors.dart';
-import '../theme/lume_metrics.dart';
-import 'lume_button.dart';
+import '../../theme/lume_colors.dart';
+import '../../theme/lume_metrics.dart';
+import '../buttons/lume_button.dart';
 
 /// Controle "− valor +" usado para cartões por dia, número de perguntas etc.
 class LumeStepper extends StatelessWidget {

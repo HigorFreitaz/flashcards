@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../theme/lume_colors.dart';
-import '../theme/lume_metrics.dart';
-import '../theme/lume_motion.dart';
+import '../../theme/lume_colors.dart';
+import '../../theme/lume_metrics.dart';
+import '../../theme/lume_motion.dart';
 
 /// Chip de seleção em pílula — ativo em primary, inativo em background.
 class LumeChip extends StatelessWidget {

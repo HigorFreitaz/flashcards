@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../theme/lume_colors.dart';
-import '../theme/lume_metrics.dart';
-import '../theme/lume_motion.dart';
+import '../../theme/lume_colors.dart';
+import '../../theme/lume_metrics.dart';
+import '../../theme/lume_motion.dart';
 
 /// Botão pílula que encolhe sutilmente ao toque — o mesmo gesto usado em
 /// todo o kit de design da Lume (escala 0,96–0,98 em 160ms).

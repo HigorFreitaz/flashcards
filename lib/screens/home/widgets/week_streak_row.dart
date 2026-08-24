@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../theme/lume_colors.dart';
+import '../../../theme/lume_colors.dart';
 
 const List<String> weekDayLabels = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
 

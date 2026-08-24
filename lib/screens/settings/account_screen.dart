@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../state/app_state.dart';
-import '../../widgets/lume_bottom_sheet.dart';
-import '../../widgets/lume_button.dart';
-import '../../widgets/lume_text_field.dart';
-import '../../widgets/lume_toast.dart';
+import '../../widgets/feedback/lume_bottom_sheet.dart';
+import '../../widgets/buttons/lume_button.dart';
+import '../../widgets/inputs/lume_text_field.dart';
+import '../../widgets/feedback/lume_toast.dart';
 import '../auth/auth_screen.dart';
 
 /// Gerenciamento da conta — nome, e-mail, senha e a exclusão da conta.

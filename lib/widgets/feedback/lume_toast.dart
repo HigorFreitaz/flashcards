@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../theme/lume_colors.dart';
+import '../../theme/lume_colors.dart';
 
 /// Toast flutuante de confirmação — um SnackBar estilizado conforme o kit
 /// de design (fundo ink, ícone de check, sem ação de fechar).

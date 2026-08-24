@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../theme/lume_colors.dart';
-import '../theme/lume_motion.dart';
+import '../../../theme/lume_colors.dart';
+import '../../../theme/lume_motion.dart';
 
 /// Anel de progresso circular — usado na meta diária e nos widgets de tela
 /// de início. Anima suavemente quando o percentual muda.

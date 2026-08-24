@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../theme/lume_colors.dart';
-import '../theme/lume_metrics.dart';
+import '../../theme/lume_colors.dart';
+import '../../theme/lume_metrics.dart';
 
 /// Campo de texto com rótulo em overline acima — o padrão de formulário
 /// usado em login, cadastro e nos formulários de baralho e cartão.

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../state/app_state.dart';
-import '../../widgets/lume_button.dart';
+import '../../widgets/buttons/lume_button.dart';
 import '../challenge/challenge_screen.dart';
 import '../home/home_screen.dart';
 import '../library/library_screen.dart';

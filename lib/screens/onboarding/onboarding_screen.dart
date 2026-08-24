@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/lume_colors.dart';
-import '../../widgets/lume_button.dart';
-import '../../widgets/lume_logo.dart';
+import '../../widgets/buttons/lume_button.dart';
+import '../../widgets/branding/lume_logo.dart';
 import '../root/root_shell.dart';
 
 class _OnboardingStep {

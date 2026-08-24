@@ -4,13 +4,13 @@ import 'package:provider/provider.dart';
 import '../../state/app_state.dart';
 import '../../theme/lume_colors.dart';
 import '../../theme/lume_metrics.dart';
-import '../../widgets/lume_bottom_sheet.dart';
-import '../../widgets/lume_button.dart';
-import '../../widgets/lume_chip.dart';
-import '../../widgets/lume_stepper.dart';
-import '../../widgets/lume_switch.dart';
-import '../../widgets/lume_text_field.dart';
-import '../../widgets/lume_toast.dart';
+import '../../widgets/feedback/lume_bottom_sheet.dart';
+import '../../widgets/buttons/lume_button.dart';
+import '../../widgets/chips/lume_chip.dart';
+import '../../widgets/inputs/lume_stepper.dart';
+import '../../widgets/inputs/lume_switch.dart';
+import '../../widgets/inputs/lume_text_field.dart';
+import '../../widgets/feedback/lume_toast.dart';
 
 /// Cria um baralho novo, ou edita um existente quando [deckId] é informado.
 class DeckFormScreen extends StatefulWidget {
