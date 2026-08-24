@@ -9,10 +9,6 @@ import '../models/deck.dart';
 import '../models/flashcard.dart';
 import '../utils/database_helper.dart';
 
-/// Estado compartilhado do app: os baralhos e cartões do usuário, sua
-/// sequência de estudo e as notificações. Tudo vive em memória — não há
-/// backend nem persistência entre sessões, só o que basta para a interface
-/// reagir e parecer viva.
 class AppState extends ChangeNotifier {
   AppState() {
     // decks.addAll(_seedDecks());
@@ -168,10 +164,6 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Avança o estágio de memorização de um cartão depois de revisado.
-  /// Sem nota manual: cartões novos passam a "a revisar"; cartões "a
-  /// revisar" respondidos certo tornam-se "dominados". Uma resposta errada
-  /// mantém o cartão na fila de revisão.
   void markCardReviewed(String deckId, String cardId, {bool? correct}) {
     final deck = findDeck(deckId);
     if (deck == null) return;
@@ -198,8 +190,6 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Apaga a conta: some com os baralhos, cartões e progresso, e devolve o
-  /// app ao estado de uma instalação nova.
   void deleteAccount() {
     // decks
     //   ..clear()
