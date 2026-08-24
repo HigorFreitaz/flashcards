@@ -1,8 +1,10 @@
 class AppUser {
-  AppUser({required this.name, required this.email});
+  AppUser({required this.name, required this.email, required this.password});
+  AppUser.login({required this.email, required this.password}) : name = '';
 
   String name;
   String email;
+  String password;
 
   String get firstName => name.trim().split(' ').first;
 

@@ -24,9 +24,11 @@ class _AuthScreenState extends State<AuthScreen> {
   _AuthMode _mode = _AuthMode.signIn;
   bool _showPassword = false;
 
-  final _nameController = TextEditingController(text: 'Ana Ribeiro');
-  final _emailController = TextEditingController(text: 'ana.ribeiro@exemplo.com');
-  final _passwordController = TextEditingController(text: 'segredo123');
+
+
+  final _nameController = TextEditingController(text: '');
+  final _emailController = TextEditingController(text: '');
+  final _passwordController = TextEditingController(text: '');
 
   @override
   void dispose() {
@@ -37,14 +39,27 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   void _submit() {
+    final appState = context.read<AppState>();
+
     if (_mode == _AuthMode.signUp) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const OnboardingScreen()),
-      );
+      final sucesso = appState.signup(_nameController.text, _emailController.text, _passwordController.text);
+      if(sucesso) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+        );
+      } else {
+        appState.showToast('Criação de conta falhou');
+      }
+
     } else {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const RootShell()),
-      );
+      final sucesso = appState.login(_emailController.text, _passwordController.text);
+      if(sucesso) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const RootShell()),
+        );
+      } else {
+        appState.showToast('Login falhou');
+      }
     }
   }
 

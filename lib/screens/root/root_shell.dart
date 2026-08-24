@@ -7,6 +7,7 @@ import '../challenge/challenge_screen.dart';
 import '../home/home_screen.dart';
 import '../library/library_screen.dart';
 import '../settings/settings_screen.dart';
+import '../../theme/lume_theme.dart';
 
 /// Casca com a navegação inferior — Início, Baralhos, Desafios e Ajustes.
 /// As telas de detalhe (baralho, estudo, criação, avisos) são empurradas

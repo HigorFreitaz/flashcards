@@ -7,6 +7,7 @@ import '../../widgets/buttons/lume_button.dart';
 import '../../widgets/inputs/lume_text_field.dart';
 import '../../widgets/feedback/lume_toast.dart';
 import '../auth/auth_screen.dart';
+import '../../theme/lume_theme.dart';
 
 /// Gerenciamento da conta — nome, e-mail, senha e a exclusão da conta.
 class AccountScreen extends StatefulWidget {
@@ -25,7 +26,7 @@ class _AccountScreenState extends State<AccountScreen> {
   @override
   void initState() {
     super.initState();
-    final user = context.read<AppState>().currentUser;
+    final user = context.read<AppState>().currentUser!;
     _nameController.text = user.name;
     _emailController.text = user.email;
   }
