@@ -163,24 +163,31 @@ class _ToggleRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fontFamily = Theme.of(context).textTheme.bodyMedium?.fontFamily;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-      decoration: BoxDecoration(color: context.lume.surface, borderRadius: BorderRadius.circular(18)),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: TextStyle(fontFamily: fontFamily, fontSize: 15, fontWeight: FontWeight.w600, color: context.lume.ink)),
-                const SizedBox(height: 4),
-                Text(subtitle, style: TextStyle(fontFamily: fontFamily, fontSize: 13, height: 1.4, color: context.lume.inkMuted)),
-              ],
-            ),
+    return Material(
+      color: context.lume.surface,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: () => onChanged(!value),
+        borderRadius: BorderRadius.circular(18),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: TextStyle(fontFamily: fontFamily, fontSize: 15, fontWeight: FontWeight.w600, color: context.lume.ink)),
+                    const SizedBox(height: 4),
+                    Text(subtitle, style: TextStyle(fontFamily: fontFamily, fontSize: 13, height: 1.4, color: context.lume.inkMuted)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              LumeSwitch(value: value, semanticLabel: title, onChanged: onChanged),
+            ],
           ),
-          const SizedBox(width: 12),
-          LumeSwitch(value: value, semanticLabel: title, onChanged: onChanged),
-        ],
+        ),
       ),
     );
   }
