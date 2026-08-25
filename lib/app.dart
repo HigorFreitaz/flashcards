@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lume/widgets/feedback/lume_toast.dart';
 import 'package:provider/provider.dart';
 
 import 'screens/auth/auth_screen.dart';
@@ -32,6 +33,7 @@ class _LumeMaterialApp extends StatelessWidget {
       darkTheme: buildLumeTheme(brightness: Brightness.dark),
       themeMode: themeMode,
       home: const AuthScreen(),
+      scaffoldMessengerKey: scaffoldMessengerKey,
     );
   }
 }

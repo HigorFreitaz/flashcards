@@ -2,15 +2,16 @@ import 'package:flutter/material.dart';
 
 import '../../theme/lume_colors.dart';
 
-/// Toast flutuante de confirmação — um SnackBar estilizado conforme o kit
-/// de design (fundo ink, ícone de check, sem ação de fechar).
+final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+
+
 void showLumeToast(BuildContext context, String message) {
   final fontFamily = Theme.of(context).textTheme.bodyMedium?.fontFamily;
   ScaffoldMessenger.of(context)
     ..clearSnackBars()
     ..showSnackBar(
       SnackBar(
-        duration: const Duration(milliseconds: 2800),
+        duration: const Duration(milliseconds: 1500),
         content: Row(
           children: [
             Icon(Icons.check_rounded, size: 18, color: context.lume.background),

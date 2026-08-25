@@ -47,6 +47,7 @@ class _AuthScreenState extends State<AuthScreen> {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const OnboardingScreen()),
         );
+        appState.showToast('Sucesso na criação da conta');
       } else {
         appState.showToast('Criação de conta falhou');
       }
@@ -57,8 +58,10 @@ class _AuthScreenState extends State<AuthScreen> {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const RootShell()),
         );
+        appState.showToast('Sucesso no login');
       } else {
         appState.showToast('Login falhou');
+
       }
     }
   }

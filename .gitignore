@@ -41,3 +41,9 @@ app.*.map.json
 /android/app/release
 # Widget Preview related
 .widget_preview/
+macos
+windows
+linux
+android
+ios
+web

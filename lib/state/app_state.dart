@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:lume/widgets/feedback/lume_toast.dart';
 
 import '../models/app_notification.dart';
 import '../models/app_user.dart';
@@ -77,13 +78,16 @@ class AppState extends ChangeNotifier {
   }
 
   void showToast(String message) {
-    _toastMessage = message;
-    notifyListeners();
-    _toastTimer?.cancel();
-    _toastTimer = Timer(const Duration(milliseconds: 2800), () {
-      _toastMessage = null;
-      notifyListeners();
-    });
+    scaffoldMessengerKey.currentState?.showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+    // _toastMessage = message;
+    // notifyListeners();
+    // _toastTimer?.cancel();
+    // _toastTimer = Timer(const Duration(milliseconds: 2800), () {
+    //   _toastMessage = null;
+    //   notifyListeners();
+    // });
   }
 
   void setDarkModeEnabled(bool enabled) {
