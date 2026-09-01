@@ -207,7 +207,7 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
     if (choice == decks.length) {
       final newId = await Navigator.of(context).push<String>(
           MaterialPageRoute(builder: (_) => const DeckFormScreen()));
-      if (newId != null) setState(() => _targetDeckId = newId);
+      if (newId != null && mounted) setState(() => _targetDeckId = newId);
     } else {
       setState(() => _targetDeckId = decks[choice].id);
       showLumeToast(context, 'Salvando em ${decks[choice].shortName}');
