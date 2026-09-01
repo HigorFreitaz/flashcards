@@ -121,16 +121,19 @@ class _LibraryScreenState extends State<LibraryScreen> {
               ),
             ),
             const SizedBox(height: 14),
-            Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                LumeChip(label: 'Todos', selected: _filter == _LibraryFilter.todos, onTap: () => setState(() => _filter = _LibraryFilter.todos)),
-                LumeChip(label: 'A revisar', selected: _filter == _LibraryFilter.aRevisar, onTap: () => setState(() => _filter = _LibraryFilter.aRevisar)),
-                LumeChip(label: 'Novos', selected: _filter == _LibraryFilter.novos, onTap: () => setState(() => _filter = _LibraryFilter.novos)),
-                LumeChip(label: 'Por IA', selected: _filter == _LibraryFilter.porIA, onTap: () => setState(() => _filter = _LibraryFilter.porIA)),
-              ],
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  LumeChip(label: 'Todos', selected: _filter == _LibraryFilter.todos, onTap: () => setState(() => _filter = _LibraryFilter.todos)),
+                  const SizedBox(width: 8),
+                  LumeChip(label: 'A revisar', selected: _filter == _LibraryFilter.aRevisar, onTap: () => setState(() => _filter = _LibraryFilter.aRevisar)),
+                  const SizedBox(width: 8),
+                  LumeChip(label: 'Novos', selected: _filter == _LibraryFilter.novos, onTap: () => setState(() => _filter = _LibraryFilter.novos)),
+                  const SizedBox(width: 8),
+                  LumeChip(label: 'Por IA', selected: _filter == _LibraryFilter.porIA, onTap: () => setState(() => _filter = _LibraryFilter.porIA)),
+                ],
+              ),
             ),
             const SizedBox(height: 14),
             Text(
