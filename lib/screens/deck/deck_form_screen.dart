@@ -67,7 +67,10 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
     final choice = await showLumeActionSheet(
       context,
       title: 'Adicionar horário',
-      actions: slots.map((t) => LumeSheetAction(label: t, checked: _reminderTimes.contains(t))).toList(),
+      actions: slots
+          .map((t) =>
+              LumeSheetAction(label: t, checked: _reminderTimes.contains(t)))
+          .toList(),
     );
     if (choice == null) return;
     final picked = slots[choice];
@@ -85,7 +88,8 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
       showLumeToast(context, 'Lembretes desativados');
       return;
     }
-    setState(() => _reminderTimes = _reminderTimes.where((t) => t != time).toList());
+    setState(
+        () => _reminderTimes = _reminderTimes.where((t) => t != time).toList());
   }
 
   void _save() {
@@ -131,11 +135,19 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: Text('Cancelar', style: TextStyle(fontFamily: fontFamily, fontSize: 16, color: context.lume.primary)),
+                    child: Text('Cancelar',
+                        style: TextStyle(
+                            fontFamily: fontFamily,
+                            fontSize: 16,
+                            color: context.lume.primary)),
                   ),
                   Text(
                     _isEditing ? 'Editar baralho' : 'Novo baralho',
-                    style: TextStyle(fontFamily: fontFamily, fontSize: 16, fontWeight: FontWeight.w600, color: context.lume.ink),
+                    style: TextStyle(
+                        fontFamily: fontFamily,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: context.lume.ink),
                   ),
                   const SizedBox(width: 62),
                 ],
@@ -147,9 +159,12 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    LumeTextField(label: 'Nome do baralho', controller: _nameController, placeholder: 'Ex. Bioquímica — Enzimas'),
+                    LumeTextField(
+                        label: 'Nome do baralho',
+                        controller: _nameController,
+                        placeholder: 'Ex. Bioquímica — Enzimas'),
                     const SizedBox(height: 20),
-                    LumeFieldLabel('Descrição (opcional)'),
+                    const LumeFieldLabel('Descrição (opcional)'),
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(15),
@@ -162,51 +177,79 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
                         controller: _descriptionController,
                         minLines: 2,
                         maxLines: 4,
-                        style: TextStyle(fontFamily: fontFamily, fontSize: 16, height: 1.45, color: context.lume.ink),
+                        style: TextStyle(
+                            fontFamily: fontFamily,
+                            fontSize: 16,
+                            height: 1.45,
+                            color: context.lume.ink),
                         decoration: InputDecoration(
                           isCollapsed: true,
                           border: InputBorder.none,
                           hintText: 'Para que serve este baralho?',
-                          hintStyle: TextStyle(fontFamily: fontFamily, fontSize: 16, height: 1.45, color: context.lume.inkMuted),
+                          hintStyle: TextStyle(
+                              fontFamily: fontFamily,
+                              fontSize: 16,
+                              height: 1.45,
+                              color: context.lume.inkMuted),
                         ),
                       ),
                     ),
                     const SizedBox(height: 22),
-                    LumeFieldLabel('Cartões por dia'),
+                    const LumeFieldLabel('Cartões por dia'),
                     LumeStepper(
                       value: _goal,
-                      caption: 'cartões · ≈ ${(_goal * 0.75).round().clamp(3, 999)} min',
-                      onDecrement: () => setState(() => _goal = (_goal - 5).clamp(5, 100).toInt()),
-                      onIncrement: () => setState(() => _goal = (_goal + 5).clamp(5, 100).toInt()),
+                      caption:
+                          'cartões · ≈ ${(_goal * 0.75).round().clamp(3, 999)} min',
+                      onDecrement: () => setState(
+                          () => _goal = (_goal - 5).clamp(5, 100).toInt()),
+                      onIncrement: () => setState(
+                          () => _goal = (_goal + 5).clamp(5, 100).toInt()),
                     ),
                     const SizedBox(height: 10),
                     Wrap(
                       alignment: WrapAlignment.center,
                       spacing: 8,
                       children: [10, 20, 40]
-                          .map((g) => LumeChip(label: '$g cartões', selected: _goal == g, onTap: () => setState(() => _goal = g)))
+                          .map((g) => LumeChip(
+                              label: '$g cartões',
+                              selected: _goal == g,
+                              onTap: () => setState(() => _goal = g)))
                           .toList(),
                     ),
                     const SizedBox(height: 22),
                     Container(
-                      decoration: BoxDecoration(color: context.lume.surface, borderRadius: BorderRadius.circular(18)),
+                      decoration: BoxDecoration(
+                          color: context.lume.surface,
+                          borderRadius: BorderRadius.circular(18)),
                       child: Column(
                         children: [
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 18, vertical: 16),
                             child: Row(
                               children: [
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Text('Lembretes', style: TextStyle(fontFamily: fontFamily, fontSize: 15, fontWeight: FontWeight.w600, color: context.lume.ink)),
+                                      Text('Lembretes',
+                                          style: TextStyle(
+                                              fontFamily: fontFamily,
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w600,
+                                              color: context.lume.ink)),
                                       const SizedBox(height: 3),
                                       Text(
                                         _remindersEnabled
-                                            ? (_reminderTimes.length == 1 ? '1 horário por dia' : '${_reminderTimes.length} horários por dia')
+                                            ? (_reminderTimes.length == 1
+                                                ? '1 horário por dia'
+                                                : '${_reminderTimes.length} horários por dia')
                                             : 'Desativado',
-                                        style: TextStyle(fontFamily: fontFamily, fontSize: 13, color: context.lume.inkMuted),
+                                        style: TextStyle(
+                                            fontFamily: fontFamily,
+                                            fontSize: 13,
+                                            color: context.lume.inkMuted),
                                       ),
                                     ],
                                   ),
@@ -214,7 +257,8 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
                                 LumeSwitch(
                                   value: _remindersEnabled,
                                   semanticLabel: 'Lembretes',
-                                  onChanged: (v) => setState(() => _remindersEnabled = v),
+                                  onChanged: (v) =>
+                                      setState(() => _remindersEnabled = v),
                                 ),
                               ],
                             ),
@@ -222,26 +266,53 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
                           if (_remindersEnabled)
                             Container(
                               padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(border: Border(top: BorderSide(color: context.lume.outline))),
+                              decoration: BoxDecoration(
+                                  border: Border(
+                                      top: BorderSide(
+                                          color: context.lume.outline))),
                               child: Column(
                                 children: [
                                   ..._reminderTimes.map((time) => Padding(
-                                        padding: const EdgeInsets.only(bottom: 8),
+                                        padding:
+                                            const EdgeInsets.only(bottom: 8),
                                         child: Container(
-                                          padding: const EdgeInsets.only(left: 14, right: 4),
-                                          constraints: const BoxConstraints(minHeight: 54),
-                                          decoration: BoxDecoration(color: context.lume.background, borderRadius: BorderRadius.circular(15)),
+                                          padding: const EdgeInsets.only(
+                                              left: 14, right: 4),
+                                          constraints: const BoxConstraints(
+                                              minHeight: 54),
+                                          decoration: BoxDecoration(
+                                              color: context.lume.background,
+                                              borderRadius:
+                                                  BorderRadius.circular(15)),
                                           child: Row(
                                             children: [
-                                              Icon(Icons.schedule_rounded, size: 17, color: context.lume.primary),
+                                              Icon(Icons.schedule_rounded,
+                                                  size: 17,
+                                                  color: context.lume.primary),
                                               const SizedBox(width: 10),
                                               Expanded(
-                                                child: Text(time, style: TextStyle(fontFamily: fontFamily, fontSize: 17, fontWeight: FontWeight.w700, color: context.lume.ink)),
+                                                child: Text(time,
+                                                    style: TextStyle(
+                                                        fontFamily: fontFamily,
+                                                        fontSize: 17,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        color:
+                                                            context.lume.ink)),
                                               ),
-                                              Text(_reminderTag(time), style: TextStyle(fontFamily: fontFamily, fontSize: 12, color: context.lume.inkMuted)),
+                                              Text(_reminderTag(time),
+                                                  style: TextStyle(
+                                                      fontFamily: fontFamily,
+                                                      fontSize: 12,
+                                                      color: context
+                                                          .lume.inkMuted)),
                                               IconButton(
-                                                onPressed: () => _removeReminder(time),
-                                                icon: Icon(Icons.close_rounded, size: 18, color: context.lume.inkMuted),
+                                                onPressed: () =>
+                                                    _removeReminder(time),
+                                                icon: Icon(Icons.close_rounded,
+                                                    size: 18,
+                                                    color:
+                                                        context.lume.inkMuted),
                                                 tooltip: 'Remover lembrete',
                                               ),
                                             ],
@@ -252,12 +323,19 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
                                     onPressed: _openTimePicker,
                                     style: OutlinedButton.styleFrom(
                                       minimumSize: const Size.fromHeight(50),
-                                      side: BorderSide(color: context.lume.outline),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                                      side: BorderSide(
+                                          color: context.lume.outline),
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(15)),
                                     ),
                                     child: Text(
                                       '+ Adicionar horário',
-                                      style: TextStyle(fontFamily: fontFamily, fontSize: 14, fontWeight: FontWeight.w600, color: context.lume.primary),
+                                      style: TextStyle(
+                                          fontFamily: fontFamily,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: context.lume.primary),
                                     ),
                                   ),
                                 ],
@@ -273,7 +351,9 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
             SafeArea(
               minimum: const EdgeInsets.fromLTRB(16, 10, 16, 10),
               top: false,
-              child: LumeButton(label: _isEditing ? 'Salvar alterações' : 'Criar baralho', onPressed: _save),
+              child: LumeButton(
+                  label: _isEditing ? 'Salvar alterações' : 'Criar baralho',
+                  onPressed: _save),
             ),
           ],
         ),

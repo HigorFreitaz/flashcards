@@ -23,7 +23,8 @@ class ChallengeScreen extends StatefulWidget {
 
 class _ChallengeScreenState extends State<ChallengeScreen> {
   _ChallengeTab _tab = _ChallengeTab.fromAI;
-  final _nameController = TextEditingController(text: 'Sprint de véspera de prova');
+  final _nameController =
+      TextEditingController(text: 'Sprint de véspera de prova');
   final Set<String> _selectedDecks = {};
   int _questionCount = 15;
   String _deadline = '1 semana';
@@ -49,7 +50,8 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
     final queue = StudyQueueItem.fromDecks(source);
     if (queue.isEmpty) return;
     Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => StudyScreen(queue: queue, sessionTitle: 'Desafio da semana', isChallenge: true),
+      builder: (_) => StudyScreen(
+          queue: queue, sessionTitle: 'Desafio da semana', isChallenge: true),
     ));
   }
 
@@ -68,7 +70,13 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                 children: [
                   Text(
                     'Desafios',
-                    style: TextStyle(fontFamily: fontFamily, fontSize: 28, height: 1.15, fontWeight: FontWeight.w700, letterSpacing: -0.6, color: context.lume.ink),
+                    style: TextStyle(
+                        fontFamily: fontFamily,
+                        fontSize: 28,
+                        height: 1.15,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.6,
+                        color: context.lume.ink),
                   ),
                   const SizedBox(height: 18),
                   LumeSegmentedTabs<_ChallengeTab>(
@@ -78,7 +86,10 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                     onChanged: (t) => setState(() => _tab = t),
                   ),
                   const SizedBox(height: 20),
-                  if (_tab == _ChallengeTab.fromAI) ..._buildAiTab(app, fontFamily) else ..._buildOwnTab(app, fontFamily),
+                  if (_tab == _ChallengeTab.fromAI)
+                    ..._buildAiTab(app, fontFamily)
+                  else
+                    ..._buildOwnTab(app, fontFamily),
                 ],
               ),
             ),
@@ -87,8 +98,12 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
               top: false,
               child: _tab == _ChallengeTab.fromAI
                   ? LumeButton(
-                      label: app.challengeJoined ? 'Continuar desafio · 11 de 15' : 'Aceitar desafio da semana',
-                      variant: app.challengeJoined ? LumeButtonVariant.secondary : LumeButtonVariant.primary,
+                      label: app.challengeJoined
+                          ? 'Continuar desafio · 11 de 15'
+                          : 'Aceitar desafio da semana',
+                      variant: app.challengeJoined
+                          ? LumeButtonVariant.secondary
+                          : LumeButtonVariant.primary,
                       onPressed: () => _startChallenge(app),
                     )
                   : LumeButton(
@@ -109,40 +124,81 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
     return [
       Container(
         padding: const EdgeInsets.all(LumeSpacing.cardPadding),
-        decoration: BoxDecoration(color: context.lume.primary, borderRadius: BorderRadius.circular(LumeRadii.card)),
+        decoration: BoxDecoration(
+            color: context.lume.primary,
+            borderRadius: BorderRadius.circular(LumeRadii.card)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('GERADO PARA VOCÊ · SEMANA 34',
-                style: TextStyle(fontFamily: fontFamily, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 1, color: context.lume.background.withValues(alpha: 0.8))),
+                style: TextStyle(
+                    fontFamily: fontFamily,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1,
+                    color: context.lume.background.withValues(alpha: 0.8))),
             const SizedBox(height: 10),
             Text('Mistura geral: 15 perguntas dos seus 4 baralhos',
-                style: TextStyle(fontFamily: fontFamily, fontSize: 23, fontWeight: FontWeight.w700, letterSpacing: -0.5, height: 1.2, color: context.lume.background)),
+                style: TextStyle(
+                    fontFamily: fontFamily,
+                    fontSize: 23,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5,
+                    height: 1.2,
+                    color: context.lume.background)),
             const SizedBox(height: 14),
-            Text('A IA escolheu os cartões que você mais erra. Uma tentativa por pergunta, sem consultar o verso.',
-                style: TextStyle(fontFamily: fontFamily, fontSize: 14, height: 1.5, color: context.lume.background.withValues(alpha: 0.85))),
+            Text(
+                'A IA escolheu os cartões que você mais erra. Uma tentativa por pergunta, sem consultar o verso.',
+                style: TextStyle(
+                    fontFamily: fontFamily,
+                    fontSize: 14,
+                    height: 1.5,
+                    color: context.lume.background.withValues(alpha: 0.85))),
             const SizedBox(height: 20),
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: app.decks.take(4).map((d) => Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(color: context.lume.background.withValues(alpha: 0.16), borderRadius: BorderRadius.circular(8)),
-                    child: Text('${d.shortName} · ${d.dueCount + d.newCount}',
-                        style: TextStyle(fontFamily: fontFamily, fontSize: 12, fontWeight: FontWeight.w600, color: context.lume.background)),
-                  )).toList(),
+              children: app.decks
+                  .take(4)
+                  .map((d) => Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                            color:
+                                context.lume.background.withValues(alpha: 0.16),
+                            borderRadius: BorderRadius.circular(8)),
+                        child: Text(
+                            '${d.shortName} · ${d.dueCount + d.newCount}',
+                            style: TextStyle(
+                                fontFamily: fontFamily,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: context.lume.background)),
+                      ))
+                  .toList(),
             ),
             const SizedBox(height: 20),
             Container(
               padding: const EdgeInsets.only(top: 18),
-              decoration: BoxDecoration(border: Border(top: BorderSide(color: context.lume.background.withValues(alpha: 0.22)))),
+              decoration: BoxDecoration(
+                  border: Border(
+                      top: BorderSide(
+                          color: context.lume.background
+                              .withValues(alpha: 0.22)))),
               child: Row(
                 children: [
-                  _HighlightStat(value: '2 dias', label: 'restantes', fontFamily: fontFamily),
+                  _HighlightStat(
+                      value: '2 dias',
+                      label: 'restantes',
+                      fontFamily: fontFamily),
                   const SizedBox(width: 22),
-                  _HighlightStat(value: '+250', label: 'XP', fontFamily: fontFamily),
+                  _HighlightStat(
+                      value: '+250', label: 'XP', fontFamily: fontFamily),
                   const SizedBox(width: 22),
-                  _HighlightStat(value: app.challengeJoined ? '11/15' : '0/15', label: 'respondidas', fontFamily: fontFamily),
+                  _HighlightStat(
+                      value: app.challengeJoined ? '11/15' : '0/15',
+                      label: 'respondidas',
+                      fontFamily: fontFamily),
                 ],
               ),
             ),
@@ -153,8 +209,18 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
       Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text('Seu histórico', style: TextStyle(fontFamily: fontFamily, fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -0.3, color: context.lume.ink)),
-          Text('${app.challengeHistory.length} semanas', style: TextStyle(fontFamily: fontFamily, fontSize: 13, color: context.lume.inkMuted)),
+          Text('Seu histórico',
+              style: TextStyle(
+                  fontFamily: fontFamily,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.3,
+                  color: context.lume.ink)),
+          Text('${app.challengeHistory.length} semanas',
+              style: TextStyle(
+                  fontFamily: fontFamily,
+                  fontSize: 13,
+                  color: context.lume.inkMuted)),
         ],
       ),
       const SizedBox(height: 12),
@@ -172,18 +238,34 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                   Container(
                     width: 38,
                     height: 38,
-                    decoration: BoxDecoration(color: context.lume.surface, borderRadius: BorderRadius.circular(13)),
+                    decoration: BoxDecoration(
+                        color: context.lume.surface,
+                        borderRadius: BorderRadius.circular(13)),
                     alignment: Alignment.center,
-                    child: Text(h.week, style: TextStyle(fontFamily: fontFamily, fontSize: 12, fontWeight: FontWeight.w700, color: context.lume.primary)),
+                    child: Text(h.week,
+                        style: TextStyle(
+                            fontFamily: fontFamily,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: context.lume.primary)),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(h.title, style: TextStyle(fontFamily: fontFamily, fontSize: 15, fontWeight: FontWeight.w600, color: context.lume.ink)),
+                        Text(h.title,
+                            style: TextStyle(
+                                fontFamily: fontFamily,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: context.lume.ink)),
                         const SizedBox(height: 3),
-                        Text(h.detail, style: TextStyle(fontFamily: fontFamily, fontSize: 13, color: context.lume.inkMuted)),
+                        Text(h.detail,
+                            style: TextStyle(
+                                fontFamily: fontFamily,
+                                fontSize: 13,
+                                color: context.lume.inkMuted)),
                       ],
                     ),
                   ),
@@ -191,12 +273,20 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                     height: 30,
                     padding: const EdgeInsets.symmetric(horizontal: 11),
                     decoration: BoxDecoration(
-                      color: h.success ? context.lume.primary : context.lume.surface,
+                      color: h.success
+                          ? context.lume.primary
+                          : context.lume.surface,
                       borderRadius: BorderRadius.circular(15),
                     ),
                     alignment: Alignment.center,
                     child: Text('${h.scorePercent}%',
-                        style: TextStyle(fontFamily: fontFamily, fontSize: 13, fontWeight: FontWeight.w700, color: h.success ? context.lume.background : context.lume.inkMuted)),
+                        style: TextStyle(
+                            fontFamily: fontFamily,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: h.success
+                                ? context.lume.background
+                                : context.lume.inkMuted)),
                   ),
                 ],
               ),
@@ -209,7 +299,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
     return [
       LumeTextField(label: 'Nome do desafio', controller: _nameController),
       const SizedBox(height: 22),
-      LumeFieldLabel('Baralhos incluídos'),
+      const LumeFieldLabel('Baralhos incluídos'),
       Wrap(
         spacing: 8,
         runSpacing: 8,
@@ -228,7 +318,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
             .toList(),
       ),
       const SizedBox(height: 22),
-      LumeFieldLabel('Perguntas'),
+      const LumeFieldLabel('Perguntas'),
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
         decoration: BoxDecoration(
@@ -240,42 +330,76 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('$_questionCount', style: TextStyle(fontFamily: fontFamily, fontSize: 26, fontWeight: FontWeight.w700, color: context.lume.ink)),
+            Text('$_questionCount',
+                style: TextStyle(
+                    fontFamily: fontFamily,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w700,
+                    color: context.lume.ink)),
             Row(
               children: [
-                LumeIconButton(icon: Icons.remove_rounded, semanticLabel: 'Menos perguntas', filled: true, size: 46, onPressed: () => setState(() => _questionCount = (_questionCount - 5).clamp(5, 40).toInt())),
+                LumeIconButton(
+                    icon: Icons.remove_rounded,
+                    semanticLabel: 'Menos perguntas',
+                    filled: true,
+                    size: 46,
+                    onPressed: () => setState(() => _questionCount =
+                        (_questionCount - 5).clamp(5, 40).toInt())),
                 const SizedBox(width: 8),
-                LumeIconButton(icon: Icons.add_rounded, semanticLabel: 'Mais perguntas', filled: true, size: 46, onPressed: () => setState(() => _questionCount = (_questionCount + 5).clamp(5, 40).toInt())),
+                LumeIconButton(
+                    icon: Icons.add_rounded,
+                    semanticLabel: 'Mais perguntas',
+                    filled: true,
+                    size: 46,
+                    onPressed: () => setState(() => _questionCount =
+                        (_questionCount + 5).clamp(5, 40).toInt())),
               ],
             ),
           ],
         ),
       ),
       const SizedBox(height: 22),
-      LumeFieldLabel('Prazo'),
+      const LumeFieldLabel('Prazo'),
       Wrap(
         spacing: 8,
         children: ['3 dias', '1 semana', '1 mês']
-            .map((d) => LumeChip(label: d, selected: _deadline == d, onTap: () => setState(() => _deadline = d)))
+            .map((d) => LumeChip(
+                label: d,
+                selected: _deadline == d,
+                onTap: () => setState(() => _deadline = d)))
             .toList(),
       ),
       const SizedBox(height: 22),
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-        decoration: BoxDecoration(color: context.lume.surface, borderRadius: BorderRadius.circular(18)),
+        decoration: BoxDecoration(
+            color: context.lume.surface,
+            borderRadius: BorderRadius.circular(18)),
         child: Row(
           children: [
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Só cartões que eu erro', style: TextStyle(fontFamily: fontFamily, fontSize: 15, fontWeight: FontWeight.w600, color: context.lume.ink)),
+                  Text('Só cartões que eu erro',
+                      style: TextStyle(
+                          fontFamily: fontFamily,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: context.lume.ink)),
                   const SizedBox(height: 3),
-                  Text('A IA prioriza acertos abaixo de 70%', style: TextStyle(fontFamily: fontFamily, fontSize: 13, color: context.lume.inkMuted)),
+                  Text('A IA prioriza acertos abaixo de 70%',
+                      style: TextStyle(
+                          fontFamily: fontFamily,
+                          fontSize: 13,
+                          color: context.lume.inkMuted)),
                 ],
               ),
             ),
-            LumeSwitch(value: _weakCardsOnly, semanticLabel: 'Só cartões que eu erro', onChanged: (v) => setState(() => _weakCardsOnly = v)),
+            LumeSwitch(
+                value: _weakCardsOnly,
+                semanticLabel: 'Só cartões que eu erro',
+                onChanged: (v) => setState(() => _weakCardsOnly = v)),
           ],
         ),
       ),
@@ -284,7 +408,8 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
 }
 
 class _HighlightStat extends StatelessWidget {
-  const _HighlightStat({required this.value, required this.label, required this.fontFamily});
+  const _HighlightStat(
+      {required this.value, required this.label, required this.fontFamily});
 
   final String value;
   final String label;
@@ -295,9 +420,18 @@ class _HighlightStat extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(value, style: TextStyle(fontFamily: fontFamily, fontSize: 17, fontWeight: FontWeight.w700, color: context.lume.background)),
+        Text(value,
+            style: TextStyle(
+                fontFamily: fontFamily,
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: context.lume.background)),
         const SizedBox(height: 2),
-        Text(label, style: TextStyle(fontFamily: fontFamily, fontSize: 12, color: context.lume.background.withValues(alpha: 0.8))),
+        Text(label,
+            style: TextStyle(
+                fontFamily: fontFamily,
+                fontSize: 12,
+                color: context.lume.background.withValues(alpha: 0.8))),
       ],
     );
   }
