@@ -210,70 +210,16 @@ class _StudyScreenState extends State<StudyScreen> {
             ),
           ),
         ),
-        _buildActionArea(fontFamily, card),
-      ],
-    );
-  }
-
-  Widget _buildActionArea(String? fontFamily, Flashcard card) {
-    if (card.hasOptions) {
-      if (_chosen == null) {
-        final options = card.options!;
-        return GridView.count(
-          shrinkWrap: true,
-          crossAxisCount: 2,
-          mainAxisSpacing: 8,
-          crossAxisSpacing: 8,
-          childAspectRatio: options.length > 2 ? 2.6 : 3.6,
-          children: List.generate(options.length, (i) {
-            return _ChoiceButton(
-              label: options[i],
-              keyLabel: String.fromCharCode(65 + i),
-              onTap: () => _pickChoice(i),
-              fontFamily: fontFamily,
-            );
-          }),
-        );
-      }
-      final correctIndex = card.correctIndex ?? 0;
-      final wasCorrect = _chosen == correctIndex;
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            margin: const EdgeInsets.only(bottom: 10),
-            decoration: BoxDecoration(color: context.lume.surface, borderRadius: BorderRadius.circular(14)),
-            child: Text(
-              wasCorrect ? '✓ Correto — ${card.back}' : '✕ Resposta certa: ${card.options![correctIndex]}',
-              style: TextStyle(
-                fontFamily: fontFamily,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                height: 1.4,
-                color: wasCorrect ? context.lume.primary : context.lume.ink,
-              ),
-            ),
-          ),
-          LumeButton(label: _nextLabel, onPressed: _next),
-        ],
-      );
-    }
-
-    if (!_flipped) {
-      return LumeButton(label: 'Mostrar resposta', onPressed: _flip);
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          'O Lume reagenda pelo seu tempo de resposta — sem nota manual.',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontFamily: fontFamily, fontSize: 12, color: context.lume.inkMuted),
+        _ActionArea(
+          card: card,
+          fontFamily: fontFamily,
+          chosen: _chosen,
+          onChoicePicked: _pickChoice,
+          flipped: _flipped,
+          onFlip: _flip,
+          nextLabel: _nextLabel,
+          onNext: _next,
         ),
-        const SizedBox(height: 10),
-        LumeButton(label: _nextLabel, onPressed: _next),
       ],
     );
   }
@@ -522,6 +468,92 @@ class _ChoiceButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ActionArea extends StatelessWidget {
+  const _ActionArea({
+    required this.card,
+    required this.fontFamily,
+    required this.chosen,
+    required this.onChoicePicked,
+    required this.flipped,
+    required this.onFlip,
+    required this.nextLabel,
+    required this.onNext,
+  });
+
+  final Flashcard card;
+  final String? fontFamily;
+  final int? chosen;
+  final ValueChanged<int> onChoicePicked;
+  final bool flipped;
+  final VoidCallback onFlip;
+  final String nextLabel;
+  final VoidCallback onNext;
+
+  @override
+  Widget build(BuildContext context) {
+    if (card.hasOptions) {
+      if (chosen == null) {
+        final options = card.options!;
+        return GridView.count(
+          shrinkWrap: true,
+          crossAxisCount: 2,
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          childAspectRatio: options.length > 2 ? 2.6 : 3.6,
+          children: List.generate(options.length, (i) {
+            return _ChoiceButton(
+              label: options[i],
+              keyLabel: String.fromCharCode(65 + i),
+              onTap: () => onChoicePicked(i),
+              fontFamily: fontFamily,
+            );
+          }),
+        );
+      }
+      final correctIndex = card.correctIndex ?? 0;
+      final wasCorrect = chosen == correctIndex;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            margin: const EdgeInsets.only(bottom: 10),
+            decoration: BoxDecoration(color: context.lume.surface, borderRadius: BorderRadius.circular(14)),
+            child: Text(
+              wasCorrect ? '✓ Correto — ${card.back}' : '✕ Resposta certa: ${card.options![correctIndex]}',
+              style: TextStyle(
+                fontFamily: fontFamily,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                height: 1.4,
+                color: wasCorrect ? context.lume.primary : context.lume.ink,
+              ),
+            ),
+          ),
+          LumeButton(label: nextLabel, onPressed: onNext),
+        ],
+      );
+    }
+
+    if (!flipped) {
+      return LumeButton(label: 'Mostrar resposta', onPressed: onFlip);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'O Lume reagenda pelo seu tempo de resposta — sem nota manual.',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontFamily: fontFamily, fontSize: 12, color: context.lume.inkMuted),
+        ),
+        const SizedBox(height: 10),
+        LumeButton(label: nextLabel, onPressed: onNext),
+      ],
     );
   }
 }
