@@ -48,25 +48,37 @@ class AlertsScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            if (today.isNotEmpty) ..._buildSection(context, 'HOJE', today, fontFamily),
-            if (week.isNotEmpty) ..._buildSection(context, 'ESTA SEMANA', week, fontFamily),
+            if (today.isNotEmpty) _NotificationSection(title: 'HOJE', items: today, fontFamily: fontFamily),
+            if (week.isNotEmpty) _NotificationSection(title: 'ESTA SEMANA', items: week, fontFamily: fontFamily),
           ],
         ),
       ),
     );
   }
+}
 
-  List<Widget> _buildSection(BuildContext context, String title, List<AppNotification> items, String? fontFamily) {
-    return [
-      Padding(
-        padding: const EdgeInsets.fromLTRB(4, 12, 4, 10),
-        child: Text(title, style: TextStyle(fontFamily: fontFamily, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.9, color: context.lume.inkMuted)),
-      ),
-      ...items.map((n) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: _NotificationRow(notification: n, fontFamily: fontFamily),
-          )),
-    ];
+class _NotificationSection extends StatelessWidget {
+  const _NotificationSection({required this.title, required this.items, required this.fontFamily});
+
+  final String title;
+  final List<AppNotification> items;
+  final String? fontFamily;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 12, 4, 10),
+          child: Text(title, style: TextStyle(fontFamily: fontFamily, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.9, color: context.lume.inkMuted)),
+        ),
+        ...items.map((n) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _NotificationRow(notification: n, fontFamily: fontFamily),
+            )),
+      ],
+    );
   }
 }
 
