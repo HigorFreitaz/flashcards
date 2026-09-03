@@ -166,7 +166,21 @@ class _StudyScreenState extends State<StudyScreen> {
                 ],
               ),
               Expanded(
-                child: _done ? _CompletionView(sessionTitle: widget.sessionTitle, isChallenge: widget.isChallenge, total: total) : _buildActiveCard(fontFamily),
+                child: _done
+                    ? _CompletionView(sessionTitle: widget.sessionTitle, isChallenge: widget.isChallenge, total: total)
+                    : _ActiveCard(
+                        card: _current.card,
+                        fontFamily: fontFamily,
+                        flipped: _flipped,
+                        onFlip: _flip,
+                        elapsedSeconds: _elapsedSeconds,
+                        playing: _playing,
+                        onToggleAudio: _toggleAudio,
+                        chosen: _chosen,
+                        onChoicePicked: _pickChoice,
+                        nextLabel: _nextLabel,
+                        onNext: _next,
+                      ),
               ),
             ],
           ),
@@ -175,8 +189,38 @@ class _StudyScreenState extends State<StudyScreen> {
     );
   }
 
-  Widget _buildActiveCard(String? fontFamily) {
-    final card = _current.card;
+  String get _nextLabel => _index + 1 >= widget.queue.length ? 'Ver resultado' : 'Próximo cartão';
+}
+
+class _ActiveCard extends StatelessWidget {
+  const _ActiveCard({
+    required this.card,
+    required this.fontFamily,
+    required this.flipped,
+    required this.onFlip,
+    required this.elapsedSeconds,
+    required this.playing,
+    required this.onToggleAudio,
+    required this.chosen,
+    required this.onChoicePicked,
+    required this.nextLabel,
+    required this.onNext,
+  });
+
+  final Flashcard card;
+  final String? fontFamily;
+  final bool flipped;
+  final VoidCallback onFlip;
+  final double elapsedSeconds;
+  final bool playing;
+  final VoidCallback onToggleAudio;
+  final int? chosen;
+  final ValueChanged<int> onChoicePicked;
+  final String nextLabel;
+  final VoidCallback onNext;
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -184,9 +228,9 @@ class _StudyScreenState extends State<StudyScreen> {
           child: Padding(
             padding: const EdgeInsets.only(bottom: 14),
             child: GestureDetector(
-              onTap: _flip,
+              onTap: onFlip,
               child: TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0, end: _flipped ? 1 : 0),
+                tween: Tween(begin: 0, end: flipped ? 1 : 0),
                 duration: LumeMotion.flip,
                 curve: LumeMotion.curve,
                 builder: (context, value, _) {
@@ -198,7 +242,7 @@ class _StudyScreenState extends State<StudyScreen> {
                       ..setEntry(3, 2, 0.001)
                       ..rotateY(angle),
                     child: showFront
-                        ? _CardFace(card: card, fontFamily: fontFamily, elapsed: _elapsedSeconds, playing: _playing, onPlay: _toggleAudio)
+                        ? _CardFace(card: card, fontFamily: fontFamily, elapsed: elapsedSeconds, playing: playing, onPlay: onToggleAudio)
                         : Transform(
                             alignment: Alignment.center,
                             transform: Matrix4.identity()..rotateY(math.pi),
@@ -213,18 +257,16 @@ class _StudyScreenState extends State<StudyScreen> {
         _ActionArea(
           card: card,
           fontFamily: fontFamily,
-          chosen: _chosen,
-          onChoicePicked: _pickChoice,
-          flipped: _flipped,
-          onFlip: _flip,
-          nextLabel: _nextLabel,
-          onNext: _next,
+          chosen: chosen,
+          onChoicePicked: onChoicePicked,
+          flipped: flipped,
+          onFlip: onFlip,
+          nextLabel: nextLabel,
+          onNext: onNext,
         ),
       ],
     );
   }
-
-  String get _nextLabel => _index + 1 >= widget.queue.length ? 'Ver resultado' : 'Próximo cartão';
 }
 
 class _CardFace extends StatelessWidget {
