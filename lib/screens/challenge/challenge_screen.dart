@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../data/repositories/challenge_repository.dart';
+import '../../data/repositories/deck_repository.dart';
 import '../../models/deck.dart';
-import '../../state/app_state.dart';
 import '../../theme/lume_colors.dart';
 import '../../theme/lume_metrics.dart';
+import '../../viewmodels/challenge_view_model.dart';
 import '../../widgets/buttons/lume_button.dart';
 import '../../widgets/chips/lume_chip.dart';
 import '../../widgets/navigation/lume_segmented_tabs.dart';
@@ -15,14 +17,26 @@ import '../study/study_screen.dart';
 
 enum _ChallengeTab { fromAI, own }
 
-class ChallengeScreen extends StatefulWidget {
+class ChallengeScreen extends StatelessWidget {
   const ChallengeScreen({super.key});
 
   @override
-  State<ChallengeScreen> createState() => _ChallengeScreenState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (ctx) => ChallengeViewModel(ctx.read<DeckRepository>(), ctx.read<ChallengeRepository>()),
+      child: const _ChallengeView(),
+    );
+  }
 }
 
-class _ChallengeScreenState extends State<ChallengeScreen> {
+class _ChallengeView extends StatefulWidget {
+  const _ChallengeView();
+
+  @override
+  State<_ChallengeView> createState() => _ChallengeViewState();
+}
+
+class _ChallengeViewState extends State<_ChallengeView> {
   _ChallengeTab _tab = _ChallengeTab.fromAI;
   final _nameController =
       TextEditingController(text: 'Sprint de véspera de prova');
@@ -34,7 +48,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
   @override
   void initState() {
     super.initState();
-    final decks = context.read<AppState>().decks;
+    final decks = context.read<ChallengeViewModel>().decks;
     _selectedDecks.addAll(decks.take(3).map((d) => d.id));
   }
 
@@ -44,10 +58,10 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
     super.dispose();
   }
 
-  void _startChallenge(AppState app) {
-    app.joinChallenge();
-    final decks = app.decks.where((d) => d.aiAssisted).toList();
-    final source = decks.isEmpty ? app.decks : decks;
+  void _startChallenge(ChallengeViewModel viewModel) {
+    viewModel.joinChallenge();
+    final decks = viewModel.decks.where((d) => d.aiAssisted).toList();
+    final source = decks.isEmpty ? viewModel.decks : decks;
     final queue = StudyQueueItem.fromDecks(source);
     if (queue.isEmpty) return;
     Navigator.of(context).push(MaterialPageRoute(
@@ -58,7 +72,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final app = context.watch<AppState>();
+    final viewModel = context.watch<ChallengeViewModel>();
     final fontFamily = Theme.of(context).textTheme.bodyMedium?.fontFamily;
 
     return Scaffold(
@@ -88,12 +102,12 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                   ),
                   const SizedBox(height: 20),
                   if (_tab == _ChallengeTab.fromAI)
-                    _AiChallengeTab(app: app, fontFamily: fontFamily)
+                    _AiChallengeTab(viewModel: viewModel, fontFamily: fontFamily)
                   else
                     _OwnChallengeTab(
                       fontFamily: fontFamily,
                       nameController: _nameController,
-                      decks: app.decks,
+                      decks: viewModel.decks,
                       selectedDecks: _selectedDecks,
                       onToggleDeck: (id) => setState(() {
                         if (_selectedDecks.contains(id)) {
@@ -117,13 +131,13 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
               top: false,
               child: _tab == _ChallengeTab.fromAI
                   ? LumeButton(
-                      label: app.challengeJoined
+                      label: viewModel.challengeJoined
                           ? 'Continuar desafio · 11 de 15'
                           : 'Aceitar desafio da semana',
-                      variant: app.challengeJoined
+                      variant: viewModel.challengeJoined
                           ? LumeButtonVariant.secondary
                           : LumeButtonVariant.primary,
-                      onPressed: () => _startChallenge(app),
+                      onPressed: () => _startChallenge(viewModel),
                     )
                   : LumeButton(
                       label: 'Criar desafio com $_questionCount perguntas',
@@ -142,9 +156,9 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
 }
 
 class _AiChallengeTab extends StatelessWidget {
-  const _AiChallengeTab({required this.app, required this.fontFamily});
+  const _AiChallengeTab({required this.viewModel, required this.fontFamily});
 
-  final AppState app;
+  final ChallengeViewModel viewModel;
   final String? fontFamily;
 
   @override
@@ -188,7 +202,7 @@ class _AiChallengeTab extends StatelessWidget {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: app.decks
+              children: viewModel.decks
                   .take(4)
                   .map((d) => Container(
                         padding: const EdgeInsets.symmetric(
@@ -226,7 +240,7 @@ class _AiChallengeTab extends StatelessWidget {
                       value: '+250', label: 'XP', fontFamily: fontFamily),
                   const SizedBox(width: 22),
                   _HighlightStat(
-                      value: app.challengeJoined ? '11/15' : '0/15',
+                      value: viewModel.challengeJoined ? '11/15' : '0/15',
                       label: 'respondidas',
                       fontFamily: fontFamily),
                 ],
@@ -246,7 +260,7 @@ class _AiChallengeTab extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.3,
                   color: context.lume.ink)),
-          Text('${app.challengeHistory.length} semanas',
+          Text('${viewModel.challengeHistory.length} semanas',
               style: TextStyle(
                   fontFamily: fontFamily,
                   fontSize: 13,
@@ -254,7 +268,7 @@ class _AiChallengeTab extends StatelessWidget {
         ],
       ),
       const SizedBox(height: 12),
-      ...app.challengeHistory.map((h) => Padding(
+      ...viewModel.challengeHistory.map((h) => Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Container(
               padding: const EdgeInsets.all(14),

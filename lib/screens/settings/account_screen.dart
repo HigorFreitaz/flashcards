@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../state/app_state.dart';
+import '../../data/repositories/user_repository.dart';
+import '../../viewmodels/account_view_model.dart';
 import '../../widgets/feedback/lume_bottom_sheet.dart';
 import '../../widgets/buttons/lume_button.dart';
 import '../../widgets/inputs/lume_text_field.dart';
@@ -10,14 +11,26 @@ import '../auth/auth_screen.dart';
 import '../../theme/lume_theme.dart';
 
 /// Gerenciamento da conta — nome, e-mail, senha e a exclusão da conta.
-class AccountScreen extends StatefulWidget {
+class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key});
 
   @override
-  State<AccountScreen> createState() => _AccountScreenState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (ctx) => AccountViewModel(ctx.read<UserRepository>()),
+      child: const _AccountView(),
+    );
+  }
 }
 
-class _AccountScreenState extends State<AccountScreen> {
+class _AccountView extends StatefulWidget {
+  const _AccountView();
+
+  @override
+  State<_AccountView> createState() => _AccountViewState();
+}
+
+class _AccountViewState extends State<_AccountView> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _newPasswordController = TextEditingController();
@@ -26,7 +39,7 @@ class _AccountScreenState extends State<AccountScreen> {
   @override
   void initState() {
     super.initState();
-    final user = context.read<AppState>().currentUser!;
+    final user = context.read<AccountViewModel>().currentUser;
     _nameController.text = user.name;
     _emailController.text = user.email;
   }
@@ -46,7 +59,7 @@ class _AccountScreenState extends State<AccountScreen> {
       showLumeToast(context, 'As senhas não coincidem');
       return;
     }
-    context.read<AppState>().updateProfile(name: _nameController.text, email: _emailController.text);
+    context.read<AccountViewModel>().updateProfile(name: _nameController.text, email: _emailController.text);
     _newPasswordController.clear();
     _confirmPasswordController.clear();
     showLumeToast(context, 'Perfil atualizado');
@@ -60,7 +73,8 @@ class _AccountScreenState extends State<AccountScreen> {
       actions: const [LumeSheetAction(label: 'Excluir minha conta permanentemente', danger: true)],
     );
     if (choice != 0 || !mounted) return;
-    context.read<AppState>().deleteAccount();
+    context.read<AccountViewModel>().deleteAccount();
+    showLumeToast(context, 'Conta Deletada');
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const AuthScreen()),
       (route) => false,

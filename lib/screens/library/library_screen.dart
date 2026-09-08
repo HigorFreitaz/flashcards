@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../data/repositories/deck_repository.dart';
 import '../../models/deck.dart';
-import '../../state/app_state.dart';
 import '../../theme/lume_colors.dart';
+import '../../viewmodels/library_view_model.dart';
 import '../../widgets/feedback/lume_bottom_sheet.dart';
 import '../../widgets/buttons/lume_button.dart';
 import '../../widgets/chips/lume_chip.dart';
@@ -13,14 +14,26 @@ import '../deck/deck_form_screen.dart';
 
 enum _LibraryFilter { todos, aRevisar, novos, porIA }
 
-class LibraryScreen extends StatefulWidget {
+class LibraryScreen extends StatelessWidget {
   const LibraryScreen({super.key});
 
   @override
-  State<LibraryScreen> createState() => _LibraryScreenState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (ctx) => LibraryViewModel(ctx.read<DeckRepository>()),
+      child: const _LibraryView(),
+    );
+  }
 }
 
-class _LibraryScreenState extends State<LibraryScreen> {
+class _LibraryView extends StatefulWidget {
+  const _LibraryView();
+
+  @override
+  State<_LibraryView> createState() => _LibraryViewState();
+}
+
+class _LibraryViewState extends State<_LibraryView> {
   final _searchController = TextEditingController();
   _LibraryFilter _filter = _LibraryFilter.todos;
 
@@ -44,18 +57,18 @@ class _LibraryScreenState extends State<LibraryScreen> {
       await Navigator.of(context).push(MaterialPageRoute(builder: (_) => DeckFormScreen(deckId: deck.id)));
     } else if (choice == 1) {
       final name = deck.shortName;
-      context.read<AppState>().deleteDeck(deck.id);
+      context.read<LibraryViewModel>().deleteDeck(deck.id);
       if (mounted) showLumeToast(context, 'Baralho "$name" excluído');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final app = context.watch<AppState>();
+    final viewModel = context.watch<LibraryViewModel>();
     final fontFamily = Theme.of(context).textTheme.bodyMedium?.fontFamily;
     final query = _searchController.text.trim().toLowerCase();
 
-    var decks = app.decks.where((d) => d.name.toLowerCase().contains(query)).toList();
+    var decks = viewModel.decks.where((d) => d.name.toLowerCase().contains(query)).toList();
     switch (_filter) {
       case _LibraryFilter.aRevisar:
         decks = decks.where((d) => d.dueCount > 0).toList();
@@ -70,7 +83,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
         break;
     }
 
-    final libraryEmpty = app.decks.isEmpty;
+    final libraryEmpty = viewModel.decks.isEmpty;
     final noResults = !libraryEmpty && decks.isEmpty;
 
     return Scaffold(
@@ -137,7 +150,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
             ),
             const SizedBox(height: 14),
             Text(
-              '${libraryEmpty ? 0 : decks.length} de ${app.decks.length} baralhos',
+              '${libraryEmpty ? 0 : decks.length} de ${viewModel.decks.length} baralhos',
               textAlign: TextAlign.center,
               style: TextStyle(fontFamily: fontFamily, fontSize: 13, color: context.lume.inkMuted),
             ),

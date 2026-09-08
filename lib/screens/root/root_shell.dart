@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../state/app_state.dart';
+import '../../data/repositories/settings_repository.dart';
+import '../../viewmodels/root_shell_view_model.dart';
 import '../../widgets/buttons/lume_button.dart';
 import '../challenge/challenge_screen.dart';
 import '../home/home_screen.dart';
@@ -12,16 +13,30 @@ import '../../theme/lume_theme.dart';
 /// Casca com a navegação inferior — Início, Baralhos, Desafios e Ajustes.
 /// As telas de detalhe (baralho, estudo, criação, avisos) são empurradas
 /// por cima, escondendo esta barra, como convém a uma tela de imersão total.
-class RootShell extends StatefulWidget {
+class RootShell extends StatelessWidget {
   const RootShell({super.key, this.initialTab = 0});
 
   final int initialTab;
 
   @override
-  State<RootShell> createState() => _RootShellState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (ctx) => RootShellViewModel(ctx.read<SettingsRepository>()),
+      child: _RootShellView(initialTab: initialTab),
+    );
+  }
 }
 
-class _RootShellState extends State<RootShell> with WidgetsBindingObserver {
+class _RootShellView extends StatefulWidget {
+  const _RootShellView({required this.initialTab});
+
+  final int initialTab;
+
+  @override
+  State<_RootShellView> createState() => _RootShellViewState();
+}
+
+class _RootShellViewState extends State<_RootShellView> with WidgetsBindingObserver {
   late int _index = widget.initialTab;
   bool _locked = false;
 
@@ -42,16 +57,16 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (!mounted) return;
-    if (state == AppLifecycleState.resumed && context.read<AppState>().biometricLockEnabled) {
+    if (state == AppLifecycleState.resumed && context.read<RootShellViewModel>().biometricLockEnabled) {
       setState(() => _locked = true);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Observa o AppState aqui para que qualquer troca de tema/segurança
+    // Observa a ViewModel aqui para que qualquer troca de tema/segurança
     // reconstrua toda a casca de uma vez, barra inferior incluída.
-    context.watch<AppState>();
+    context.watch<RootShellViewModel>();
 
     final tabs = [
       HomeScreen(onGoToChallengeTab: () => _goToTab(2), onGoToLibraryTab: () => _goToTab(1)),

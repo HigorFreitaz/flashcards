@@ -4,12 +4,13 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../data/repositories/deck_repository.dart';
 import '../../models/deck.dart';
 import '../../models/flashcard.dart';
-import '../../state/app_state.dart';
 import '../../theme/lume_colors.dart';
 import '../../theme/lume_metrics.dart';
 import '../../theme/lume_motion.dart';
+import '../../viewmodels/study_view_model.dart';
 import '../../widgets/buttons/lume_button.dart';
 
 /// Um cartão amarrado ao baralho de origem — para que a resposta seja
@@ -36,7 +37,7 @@ const _wave = <double>[
   10, 18, 26, 14, 30, 22, 12, 26, 34, 20, 14, 24, 30, 16, 10, 22, 28, 18, 12, 26, 20, 14,
 ];
 
-class StudyScreen extends StatefulWidget {
+class StudyScreen extends StatelessWidget {
   const StudyScreen({
     super.key,
     required this.queue,
@@ -49,10 +50,30 @@ class StudyScreen extends StatefulWidget {
   final bool isChallenge;
 
   @override
-  State<StudyScreen> createState() => _StudyScreenState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (ctx) => StudyViewModel(ctx.read<DeckRepository>()),
+      child: _StudyView(queue: queue, sessionTitle: sessionTitle, isChallenge: isChallenge),
+    );
+  }
 }
 
-class _StudyScreenState extends State<StudyScreen> {
+class _StudyView extends StatefulWidget {
+  const _StudyView({
+    required this.queue,
+    required this.sessionTitle,
+    required this.isChallenge,
+  });
+
+  final List<StudyQueueItem> queue;
+  final String sessionTitle;
+  final bool isChallenge;
+
+  @override
+  State<_StudyView> createState() => _StudyViewState();
+}
+
+class _StudyViewState extends State<_StudyView> {
   int _index = 0;
   bool _flipped = false;
   int? _chosen;
@@ -104,14 +125,14 @@ class _StudyScreenState extends State<StudyScreen> {
     setState(() => _chosen = i);
     final card = _current.card;
     final correct = i == card.correctIndex;
-    context.read<AppState>().markCardReviewed(_current.deckId, card.id, correct: correct);
+    context.read<StudyViewModel>().markCardReviewed(_current.deckId, card.id, correct: correct);
   }
 
   void _next() {
     _audioTimer?.cancel();
     final card = _current.card;
     if (!card.hasOptions) {
-      context.read<AppState>().markCardReviewed(_current.deckId, card.id);
+      context.read<StudyViewModel>().markCardReviewed(_current.deckId, card.id);
     }
     setState(() {
       _index += 1;

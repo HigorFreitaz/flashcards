@@ -1,19 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../data/repositories/settings_repository.dart';
+import '../../data/repositories/user_repository.dart';
 import '../../models/app_user.dart';
-import '../../state/app_state.dart';
 import '../../theme/lume_metrics.dart';
 import '../../theme/lume_theme.dart';
+import '../../viewmodels/settings_view_model.dart';
 import '../../widgets/feedback/lume_bottom_sheet.dart';
 import '../../widgets/buttons/lume_button.dart';
 import '../../widgets/inputs/lume_switch.dart';
 import '../../widgets/inputs/lume_text_field.dart';
+import '../../widgets/feedback/lume_toast.dart';
 import '../auth/auth_screen.dart';
 import 'account_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (ctx) => SettingsViewModel(ctx.read<UserRepository>(), ctx.read<SettingsRepository>()),
+      child: const _SettingsView(),
+    );
+  }
+}
+
+class _SettingsView extends StatelessWidget {
+  const _SettingsView();
 
   Future<void> _confirmLogout(BuildContext context) async {
     final choice = await showLumeActionSheet(
@@ -22,17 +37,17 @@ class SettingsScreen extends StatelessWidget {
       actions: const [LumeSheetAction(label: 'Sair da conta', danger: true)],
     );
     if (choice != 0 || !context.mounted) return;
-    final appState = context.read<AppState>();
+    final viewModel = context.read<SettingsViewModel>();
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const AuthScreen()),
           (route) => false,
     );
-    appState.currentUser = null;
+    viewModel.logout();
   }
 
   @override
   Widget build(BuildContext context) {
-    final app = context.watch<AppState>();
+    final viewModel = context.watch<SettingsViewModel>();
     final fontFamily = Theme.of(context).textTheme.bodyMedium?.fontFamily;
 
     return SafeArea(
@@ -55,7 +70,7 @@ class SettingsScreen extends StatelessWidget {
           ),
           const LumeFieldLabel('Conta'),
           _AccountRow(
-            user: app.currentUser!,
+            user: viewModel.currentUser,
             onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AccountScreen())),
           ),
           const SizedBox(height: LumeSpacing.section),
@@ -63,10 +78,10 @@ class SettingsScreen extends StatelessWidget {
           _ToggleRow(
             title: 'Bloqueio por biometria',
             subtitle: 'Peça digital ou Face ID toda vez que o app voltar do segundo plano.',
-            value: app.biometricLockEnabled,
+            value: viewModel.biometricLockEnabled,
             onChanged: (v) {
-              context.read<AppState>().setBiometricLockEnabled(v);
-              context.read<AppState>().showToast(v ? 'Bloqueio por biometria ativado' : 'Bloqueio por biometria desativado');
+              viewModel.setBiometricLockEnabled(v);
+              showLumeToast(context, v ? 'Bloqueio por biometria ativado' : 'Bloqueio por biometria desativado');
             },
           ),
           const SizedBox(height: LumeSpacing.section),
@@ -74,8 +89,8 @@ class SettingsScreen extends StatelessWidget {
           _ToggleRow(
             title: 'Tema escuro',
             subtitle: 'Troca a paleta clara pela escura em todo o app.',
-            value: app.isDarkMode,
-            onChanged: (v) => context.read<AppState>().setDarkModeEnabled(v),
+            value: viewModel.isDarkMode,
+            onChanged: (v) => viewModel.setDarkModeEnabled(v),
           ),
           const SizedBox(height: LumeSpacing.section),
           LumeButton(

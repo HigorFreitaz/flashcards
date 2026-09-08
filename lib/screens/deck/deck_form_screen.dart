@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../state/app_state.dart';
+import '../../data/repositories/deck_repository.dart';
 import '../../theme/lume_colors.dart';
 import '../../theme/lume_metrics.dart';
+import '../../viewmodels/deck_form_view_model.dart';
 import '../../widgets/buttons/lume_button.dart';
 import '../../widgets/chips/lume_chip.dart';
 import '../../widgets/inputs/lume_stepper.dart';
@@ -12,16 +13,28 @@ import '../../widgets/inputs/lume_text_field.dart';
 import '../../widgets/feedback/lume_toast.dart';
 
 /// Cria um baralho novo, ou edita um existente quando [deckId] é informado.
-class DeckFormScreen extends StatefulWidget {
+class DeckFormScreen extends StatelessWidget {
   const DeckFormScreen({super.key, this.deckId});
 
   final String? deckId;
 
   @override
-  State<DeckFormScreen> createState() => _DeckFormScreenState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (ctx) => DeckFormViewModel(ctx.read<DeckRepository>(), deckId),
+      child: const _DeckFormView(),
+    );
+  }
 }
 
-class _DeckFormScreenState extends State<DeckFormScreen> {
+class _DeckFormView extends StatefulWidget {
+  const _DeckFormView();
+
+  @override
+  State<_DeckFormView> createState() => _DeckFormViewState();
+}
+
+class _DeckFormViewState extends State<_DeckFormView> {
   late final _nameController = TextEditingController();
   late final _descriptionController = TextEditingController();
   int _goal = 20;
@@ -29,11 +42,9 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
   List<String> _reminderTimes = ['20:00'];
   bool _initialized = false;
 
-  bool get _isEditing => widget.deckId != null;
-
-  void _initFromDeck(BuildContext context) {
-    if (_initialized || widget.deckId == null) return;
-    final deck = context.read<AppState>().findDeck(widget.deckId!);
+  void _initFromDeck(DeckFormViewModel viewModel) {
+    if (_initialized) return;
+    final deck = viewModel.existingDeck;
     if (deck != null) {
       _nameController.text = deck.name;
       _descriptionController.text = deck.description;
@@ -84,35 +95,23 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
   }
 
   void _save() {
-    final app = context.read<AppState>();
-    final name = _nameController.text.trim();
-    if (widget.deckId != null) {
-      app.updateDeckMeta(
-        widget.deckId!,
-        name: name.isEmpty ? 'Sem título' : name,
-        description: _descriptionController.text.trim(),
-        dailyGoal: _goal,
-        remindersEnabled: _remindersEnabled,
-        reminderTimes: _reminderTimes,
-      );
-      Navigator.of(context).pop(widget.deckId);
-      showLumeToast(context, 'Baralho atualizado');
-    } else {
-      final deck = app.createDeck(
-        name: name.isEmpty ? 'Sem título' : name,
-        description: _descriptionController.text.trim(),
-        dailyGoal: _goal,
-        remindersEnabled: _remindersEnabled,
-        reminderTimes: _reminderTimes,
-      );
-      Navigator.of(context).pop(deck.id);
-      showLumeToast(context, 'Baralho "${deck.shortName}" criado');
-    }
+    final viewModel = context.read<DeckFormViewModel>();
+    final isEditing = viewModel.isEditing;
+    final deck = viewModel.save(
+      name: _nameController.text.trim(),
+      description: _descriptionController.text.trim(),
+      dailyGoal: _goal,
+      remindersEnabled: _remindersEnabled,
+      reminderTimes: _reminderTimes,
+    );
+    Navigator.of(context).pop(deck.id);
+    showLumeToast(context, isEditing ? 'Baralho atualizado' : 'Baralho "${deck.shortName}" criado');
   }
 
   @override
   Widget build(BuildContext context) {
-    _initFromDeck(context);
+    final viewModel = context.watch<DeckFormViewModel>();
+    _initFromDeck(viewModel);
     final fontFamily = Theme.of(context).textTheme.bodyMedium?.fontFamily;
 
     return Scaffold(
@@ -133,7 +132,7 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
                             color: context.lume.primary)),
                   ),
                   Text(
-                    _isEditing ? 'Editar baralho' : 'Novo baralho',
+                    viewModel.isEditing ? 'Editar baralho' : 'Novo baralho',
                     style: TextStyle(
                         fontFamily: fontFamily,
                         fontSize: 16,
@@ -343,7 +342,7 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
               minimum: const EdgeInsets.fromLTRB(16, 10, 16, 10),
               top: false,
               child: LumeButton(
-                  label: _isEditing ? 'Salvar alterações' : 'Criar baralho',
+                  label: viewModel.isEditing ? 'Salvar alterações' : 'Criar baralho',
                   onPressed: _save),
             ),
           ],

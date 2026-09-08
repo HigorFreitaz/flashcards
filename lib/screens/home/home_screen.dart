@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../data/repositories/deck_repository.dart';
+import '../../data/repositories/notification_repository.dart';
+import '../../data/repositories/progress_repository.dart';
+import '../../data/repositories/user_repository.dart';
 import '../../models/deck.dart';
-import '../../state/app_state.dart';
 import '../../theme/lume_colors.dart';
 import '../../theme/lume_metrics.dart';
 import '../../utils/pt_br_date.dart';
+import '../../viewmodels/home_view_model.dart';
 import '../../widgets/buttons/lume_button.dart';
 import 'widgets/progress_ring.dart';
 import 'widgets/week_streak_row.dart';
@@ -21,14 +25,34 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final app = context.watch<AppState>();
+    return ChangeNotifierProvider(
+      create: (ctx) => HomeViewModel(
+        ctx.read<DeckRepository>(),
+        ctx.read<UserRepository>(),
+        ctx.read<NotificationRepository>(),
+        ctx.read<ProgressRepository>(),
+      ),
+      child: _HomeView(onGoToChallengeTab: onGoToChallengeTab, onGoToLibraryTab: onGoToLibraryTab),
+    );
+  }
+}
+
+class _HomeView extends StatelessWidget {
+  const _HomeView({required this.onGoToChallengeTab, required this.onGoToLibraryTab});
+
+  final VoidCallback onGoToChallengeTab;
+  final VoidCallback onGoToLibraryTab;
+
+  @override
+  Widget build(BuildContext context) {
+    final viewModel = context.watch<HomeViewModel>();
     final fontFamily = Theme.of(context).textTheme.bodyMedium?.fontFamily;
-    final dueToday = app.dueToday;
-    final dailyGoalTarget = app.decks.isEmpty
+    final dueToday = viewModel.dueToday;
+    final dailyGoalTarget = viewModel.decks.isEmpty
         ? 1
-        : app.decks.fold<int>(0, (sum, d) => sum + d.dailyGoal);
+        : viewModel.decks.fold<int>(0, (sum, d) => sum + d.dailyGoal);
     final dailyPercent = dailyGoalTarget == 0 ? 0.0 : (1 - dueToday / dailyGoalTarget).clamp(0.0, 1.0).toDouble();
-    final recentDecks = [...app.decks]..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    final recentDecks = [...viewModel.decks]..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -50,7 +74,7 @@ class HomeScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${greetingForHour(DateTime.now().hour)}, ${app.currentUser!.firstName}',
+                        '${greetingForHour(DateTime.now().hour)}, ${viewModel.currentUser.firstName}',
                         style: TextStyle(
                           fontFamily: fontFamily,
                           fontSize: 28,
@@ -64,7 +88,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
                 _AlertsButton(
-                  unread: app.unreadNotificationCount > 0,
+                  unread: viewModel.unreadNotificationCount > 0,
                   onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AlertsScreen())),
                 ),
               ],
@@ -77,19 +101,19 @@ class HomeScreen extends StatelessWidget {
                   ? null
                   : () => Navigator.of(context).push(MaterialPageRoute(
                         builder: (_) => StudyScreen(
-                          queue: StudyQueueItem.fromDecks(app.decks),
+                          queue: StudyQueueItem.fromDecks(viewModel.decks),
                           sessionTitle: 'Revisão do dia',
                         ),
                       )),
             ),
             const SizedBox(height: 12),
-            _StreakCard(app: app),
+            _StreakCard(viewModel: viewModel),
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: _StatTile(value: '${(app.weeklyAccuracy * 100).round()}%', label: 'precisão na semana')),
+                Expanded(child: _StatTile(value: '${(viewModel.weeklyAccuracy * 100).round()}%', label: 'precisão na semana')),
                 const SizedBox(width: 10),
-                Expanded(child: _StatTile(value: '${app.minutesStudiedToday}', suffix: ' min', label: 'estudados hoje')),
+                Expanded(child: _StatTile(value: '${viewModel.minutesStudiedToday}', suffix: ' min', label: 'estudados hoje')),
               ],
             ),
             const SizedBox(height: 12),
@@ -227,14 +251,14 @@ class _DailyGoalCard extends StatelessWidget {
 }
 
 class _StreakCard extends StatelessWidget {
-  const _StreakCard({required this.app});
+  const _StreakCard({required this.viewModel});
 
-  final AppState app;
+  final HomeViewModel viewModel;
 
   @override
   Widget build(BuildContext context) {
     final fontFamily = Theme.of(context).textTheme.bodyMedium?.fontFamily;
-    final xpProgress = app.totalXp / (app.totalXp + app.xpToNextLevel);
+    final xpProgress = viewModel.totalXp / (viewModel.totalXp + viewModel.xpToNextLevel);
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -247,24 +271,24 @@ class _StreakCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Sequência de ${app.streakDays} dias',
+              Text('Sequência de ${viewModel.streakDays} dias',
                   style: TextStyle(fontFamily: fontFamily, fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: context.lume.ink)),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                 decoration: BoxDecoration(color: context.lume.surface, borderRadius: BorderRadius.circular(10)),
-                child: Text('Nível ${app.level}',
+                child: Text('Nível ${viewModel.level}',
                     style: TextStyle(fontFamily: fontFamily, fontSize: 12, fontWeight: FontWeight.w700, color: context.lume.primary)),
               ),
             ],
           ),
           const SizedBox(height: 18),
-          WeekStreakRow(progress: app.weekProgress, today: 1),
+          WeekStreakRow(progress: viewModel.weekProgress, today: 1),
           const SizedBox(height: 18),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('${app.totalXp} XP', style: TextStyle(fontFamily: fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: context.lume.inkMuted)),
-              Text('faltam ${app.xpToNextLevel} para o nível ${app.level + 1}',
+              Text('${viewModel.totalXp} XP', style: TextStyle(fontFamily: fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: context.lume.inkMuted)),
+              Text('faltam ${viewModel.xpToNextLevel} para o nível ${viewModel.level + 1}',
                   style: TextStyle(fontFamily: fontFamily, fontSize: 13, color: context.lume.inkMuted)),
             ],
           ),

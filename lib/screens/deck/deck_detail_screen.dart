@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../data/repositories/deck_repository.dart';
 import '../../models/deck.dart';
 import '../../models/flashcard.dart';
-import '../../state/app_state.dart';
 import '../../theme/lume_colors.dart';
 import '../../theme/lume_metrics.dart';
+import '../../viewmodels/deck_detail_view_model.dart';
 import '../../widgets/feedback/lume_bottom_sheet.dart';
 import '../../widgets/buttons/lume_button.dart';
 import '../../widgets/feedback/lume_toast.dart';
@@ -13,16 +14,28 @@ import '../create_card/create_card_screen.dart';
 import '../study/study_screen.dart';
 import 'deck_form_screen.dart';
 
-class DeckDetailScreen extends StatefulWidget {
+class DeckDetailScreen extends StatelessWidget {
   const DeckDetailScreen({super.key, required this.deckId});
 
   final String deckId;
 
   @override
-  State<DeckDetailScreen> createState() => _DeckDetailScreenState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (ctx) => DeckDetailViewModel(ctx.read<DeckRepository>(), deckId),
+      child: const _DeckDetailView(),
+    );
+  }
 }
 
-class _DeckDetailScreenState extends State<DeckDetailScreen> {
+class _DeckDetailView extends StatefulWidget {
+  const _DeckDetailView();
+
+  @override
+  State<_DeckDetailView> createState() => _DeckDetailViewState();
+}
+
+class _DeckDetailViewState extends State<_DeckDetailView> {
   CardStatus? _filter;
 
   Future<void> _openDeckMenu(Deck deck) async {
@@ -49,7 +62,7 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
         break;
       case 3:
         final name = deck.shortName;
-        context.read<AppState>().deleteDeck(deck.id);
+        context.read<DeckDetailViewModel>().deleteDeck();
         if (mounted) {
           Navigator.of(context).pop();
           showLumeToast(context, 'Baralho "$name" excluído');
@@ -76,7 +89,7 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
         showLumeToast(context, 'Cartão suspenso das revisões');
         break;
       case 2:
-        context.read<AppState>().deleteCard(deck.id, card.id);
+        context.read<DeckDetailViewModel>().deleteCard(card.id);
         if (mounted) showLumeToast(context, 'Cartão excluído');
     }
   }
@@ -94,8 +107,8 @@ class _DeckDetailScreenState extends State<DeckDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final app = context.watch<AppState>();
-    final deck = app.findDeck(widget.deckId);
+    final viewModel = context.watch<DeckDetailViewModel>();
+    final deck = viewModel.deck;
     final fontFamily = Theme.of(context).textTheme.bodyMedium?.fontFamily;
 
     if (deck == null) {

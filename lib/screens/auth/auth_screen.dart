@@ -1,30 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../state/app_state.dart';
+import '../../data/repositories/user_repository.dart';
 import '../../theme/lume_colors.dart';
 import '../../theme/lume_metrics.dart';
+import '../../viewmodels/auth_view_model.dart';
 import '../../widgets/buttons/lume_button.dart';
 import '../../widgets/branding/lume_logo.dart';
 import '../../widgets/navigation/lume_segmented_tabs.dart';
 import '../../widgets/inputs/lume_text_field.dart';
+import '../../widgets/feedback/lume_toast.dart';
 import '../onboarding/onboarding_screen.dart';
 import '../root/root_shell.dart';
 
 enum _AuthMode { signIn, signUp }
 
-class AuthScreen extends StatefulWidget {
+class AuthScreen extends StatelessWidget {
   const AuthScreen({super.key});
 
   @override
-  State<AuthScreen> createState() => _AuthScreenState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (ctx) => AuthViewModel(ctx.read<UserRepository>()),
+      child: const _AuthView(),
+    );
+  }
 }
 
-class _AuthScreenState extends State<AuthScreen> {
+class _AuthView extends StatefulWidget {
+  const _AuthView();
+
+  @override
+  State<_AuthView> createState() => _AuthViewState();
+}
+
+class _AuthViewState extends State<_AuthView> {
   _AuthMode _mode = _AuthMode.signIn;
   bool _showPassword = false;
-
-
 
   final _nameController = TextEditingController(text: '');
   final _emailController = TextEditingController(text: '');
@@ -39,29 +51,27 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   void _submit() {
-    final appState = context.read<AppState>();
+    final viewModel = context.read<AuthViewModel>();
 
     if (_mode == _AuthMode.signUp) {
-      final sucesso = appState.signup(_nameController.text, _emailController.text, _passwordController.text);
-      if(sucesso) {
+      final sucesso = viewModel.signup(_nameController.text, _emailController.text, _passwordController.text);
+      if (sucesso) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const OnboardingScreen()),
         );
-        appState.showToast('Sucesso na criação da conta');
+        showLumeToast(context, 'Sucesso na criação da conta');
       } else {
-        appState.showToast('Criação de conta falhou');
+        showLumeToast(context, 'Criação de conta falhou');
       }
-
     } else {
-      final sucesso = appState.login(_emailController.text, _passwordController.text);
-      if(sucesso) {
+      final sucesso = viewModel.login(_emailController.text, _passwordController.text);
+      if (sucesso) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const RootShell()),
         );
-        appState.showToast('Sucesso no login');
+        showLumeToast(context, 'Sucesso no login');
       } else {
-        appState.showToast('Login falhou');
-
+        showLumeToast(context, 'Login falhou');
       }
     }
   }
@@ -146,10 +156,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: TextButton(
-                    onPressed: () {
-                      final app = context.read<AppState>();
-                      app.showToast('Enviamos um link de acesso para seu e-mail');
-                    },
+                    onPressed: () => showLumeToast(context, 'Enviamos um link de acesso para seu e-mail'),
                     style: TextButton.styleFrom(minimumSize: const Size(0, LumeTouch.minimum)),
                     child: Text(
                       'Esqueci minha senha',

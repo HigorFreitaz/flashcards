@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../data/repositories/notification_repository.dart';
 import '../../models/app_notification.dart';
-import '../../state/app_state.dart';
 import '../../theme/lume_colors.dart';
+import '../../viewmodels/alerts_view_model.dart';
 import '../../widgets/buttons/lume_button.dart';
 import '../../widgets/feedback/lume_toast.dart';
 
@@ -12,10 +13,22 @@ class AlertsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final app = context.watch<AppState>();
+    return ChangeNotifierProvider(
+      create: (ctx) => AlertsViewModel(ctx.read<NotificationRepository>()),
+      child: const _AlertsView(),
+    );
+  }
+}
+
+class _AlertsView extends StatelessWidget {
+  const _AlertsView();
+
+  @override
+  Widget build(BuildContext context) {
+    final viewModel = context.watch<AlertsViewModel>();
     final fontFamily = Theme.of(context).textTheme.bodyMedium?.fontFamily;
-    final today = app.notifications.where((n) => n.when == 'agora' || n.when.endsWith('h')).toList();
-    final week = app.notifications.where((n) => !today.contains(n)).toList();
+    final today = viewModel.notifications.where((n) => n.when == 'agora' || n.when.endsWith('h')).toList();
+    final week = viewModel.notifications.where((n) => !today.contains(n)).toList();
 
     return Scaffold(
       body: SafeArea(
@@ -40,7 +53,7 @@ class AlertsScreen extends StatelessWidget {
                 ),
                 TextButton(
                   onPressed: () {
-                    context.read<AppState>().markAllNotificationsRead();
+                    viewModel.markAllRead();
                     showLumeToast(context, 'Todos os avisos marcados como lidos');
                   },
                   child: Text('Marcar lidos', style: TextStyle(fontFamily: fontFamily, fontSize: 14, fontWeight: FontWeight.w600, color: context.lume.primary)),

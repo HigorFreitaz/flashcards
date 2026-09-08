@@ -3,11 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../data/repositories/deck_repository.dart';
 import '../../models/deck.dart';
 import '../../models/flashcard.dart';
-import '../../state/app_state.dart';
 import '../../theme/lume_colors.dart';
 import '../../theme/lume_metrics.dart';
+import '../../viewmodels/create_card_view_model.dart';
 import '../../widgets/feedback/lume_bottom_sheet.dart';
 import '../../widgets/buttons/lume_button.dart';
 import '../../widgets/navigation/lume_segmented_tabs.dart';
@@ -120,17 +121,32 @@ final _sourceGenerated = {
 
 /// Cria um cartão novo (digitado ou gerado por IA), ou edita um existente
 /// quando [editingCardId] é informado.
-class CreateCardScreen extends StatefulWidget {
+class CreateCardScreen extends StatelessWidget {
   const CreateCardScreen({super.key, required this.deckId, this.editingCardId});
 
   final String deckId;
   final String? editingCardId;
 
   @override
-  State<CreateCardScreen> createState() => _CreateCardScreenState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (ctx) => CreateCardViewModel(ctx.read<DeckRepository>(), editingCardId: editingCardId),
+      child: _CreateCardView(deckId: deckId, editingCardId: editingCardId),
+    );
+  }
 }
 
-class _CreateCardScreenState extends State<CreateCardScreen> {
+class _CreateCardView extends StatefulWidget {
+  const _CreateCardView({required this.deckId, this.editingCardId});
+
+  final String deckId;
+  final String? editingCardId;
+
+  @override
+  State<_CreateCardView> createState() => _CreateCardViewState();
+}
+
+class _CreateCardViewState extends State<_CreateCardView> {
   late String _targetDeckId = widget.deckId;
   late _EntryMode _mode =
       widget.editingCardId != null ? _EntryMode.type : _EntryMode.ai;
@@ -149,12 +165,7 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
   Set<int> _picked = {};
   Timer? _generateTimer;
 
-  Flashcard? get _editingCard {
-    if (widget.editingCardId == null) return null;
-    return context.read<AppState>().findDeck(widget.deckId)?.cards.firstWhere(
-        (c) => c.id == widget.editingCardId,
-        orElse: () => Flashcard(id: '', front: '', back: ''));
-  }
+  Flashcard? get _editingCard => context.read<CreateCardViewModel>().editingCard(widget.deckId);
 
   @override
   void initState() {
@@ -192,8 +203,8 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
     super.dispose();
   }
 
-  Future<void> _openDeckPicker(AppState app) async {
-    final decks = app.decks;
+  Future<void> _openDeckPicker(CreateCardViewModel viewModel) async {
+    final decks = viewModel.decks;
     final choice = await showLumeActionSheet(
       context,
       title: 'Salvar em',
@@ -233,23 +244,22 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
     });
   }
 
-  void _save(AppState app, Deck targetDeck) {
+  void _save(CreateCardViewModel viewModel, Deck targetDeck) {
     if (_mode == _EntryMode.ai) {
       final selected = _picked.toList()..sort();
-      for (final i in selected) {
+      final cards = selected.map((i) {
         final g = _generated[i];
-        app.addCard(
-            targetDeck.id,
-            Flashcard(
-              id: 'card-${DateTime.now().microsecondsSinceEpoch}-$i',
-              front: g.front,
-              back: g.back,
-              type: g.type,
-              audioSeconds: g.audioSeconds,
-              mediaCaption: g.mediaCaption,
-              aiGenerated: true,
-            ));
-      }
+        return Flashcard(
+          id: 'card-${DateTime.now().microsecondsSinceEpoch}-$i',
+          front: g.front,
+          back: g.back,
+          type: g.type,
+          audioSeconds: g.audioSeconds,
+          mediaCaption: g.mediaCaption,
+          aiGenerated: true,
+        );
+      }).toList();
+      viewModel.saveGeneratedCards(targetDeck.id, cards);
       Navigator.of(context).pop();
       showLumeToast(context,
           '${selected.length} cartões salvos em ${targetDeck.shortName}');
@@ -277,22 +287,18 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
       aiGenerated: editing?.aiGenerated ?? false,
     );
 
-    if (editing != null && editing.id.isNotEmpty) {
-      app.updateCard(targetDeck.id, card);
-      Navigator.of(context).pop();
-      showLumeToast(context, 'Cartão atualizado em ${targetDeck.shortName}');
-    } else {
-      app.addCard(targetDeck.id, card);
-      Navigator.of(context).pop();
-      showLumeToast(context, 'Cartão salvo em ${targetDeck.shortName}');
-    }
+    final wasEditing = editing != null && editing.id.isNotEmpty;
+    viewModel.saveTypedCard(targetDeck.id, card);
+    Navigator.of(context).pop();
+    showLumeToast(context,
+        wasEditing ? 'Cartão atualizado em ${targetDeck.shortName}' : 'Cartão salvo em ${targetDeck.shortName}');
   }
 
   @override
   Widget build(BuildContext context) {
-    final app = context.watch<AppState>();
+    final viewModel = context.watch<CreateCardViewModel>();
     final fontFamily = Theme.of(context).textTheme.bodyMedium?.fontFamily;
-    final targetDeck = app.findDeck(_targetDeckId) ?? app.decks.first;
+    final targetDeck = viewModel.findDeck(_targetDeckId) ?? viewModel.decks.first;
     final isEditing = widget.editingCardId != null;
     final showSaveAction =
         !(_mode == _EntryMode.ai && _aiState == _AiState.idle);
@@ -331,7 +337,7 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     GestureDetector(
-                      onTap: () => _openDeckPicker(app),
+                      onTap: () => _openDeckPicker(viewModel),
                       child: Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -447,7 +453,7 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
                       : (isEditing
                           ? 'Salvar alterações'
                           : 'Salvar em ${targetDeck.shortName}'),
-                  onPressed: () => _save(app, targetDeck),
+                  onPressed: () => _save(viewModel, targetDeck),
                 ),
               )
             else
@@ -464,7 +470,139 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
       ),
     );
   }
+}
 
+class _TypeModeForm extends StatelessWidget {
+  const _TypeModeForm({
+    required this.fontFamily,
+    required this.frontController,
+    required this.backController,
+    required this.responseType,
+    required this.onResponseTypeChanged,
+    required this.altControllers,
+    required this.correctIndex,
+    required this.onCorrectIndexChanged,
+  });
+
+  final String? fontFamily;
+  final TextEditingController frontController;
+  final TextEditingController backController;
+  final _ResponseType responseType;
+  final ValueChanged<_ResponseType> onResponseTypeChanged;
+  final List<TextEditingController> altControllers;
+  final int correctIndex;
+  final ValueChanged<int> onCorrectIndexChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const LumeFieldLabel('Frente'),
+        _MultilineBox(
+            controller: frontController, minHeight: 88, fontFamily: fontFamily),
+        const SizedBox(height: 20),
+        const LumeFieldLabel('Tipo de resposta'),
+        LumeSegmentedTabs<_ResponseType>(
+          options: const [
+            _ResponseType.texto,
+            _ResponseType.duasOpcoes,
+            _ResponseType.quatroOpcoes
+          ],
+          labels: const ['Texto', '2 opções', '4 opções'],
+          value: responseType,
+          onChanged: onResponseTypeChanged,
+        ),
+        const SizedBox(height: 20),
+        if (responseType == _ResponseType.texto) ...[
+          const LumeFieldLabel('Verso'),
+          _MultilineBox(
+              controller: backController,
+              minHeight: 88,
+              fontFamily: fontFamily,
+              placeholder: 'Toque para escrever a resposta'),
+        ] else ...[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('ALTERNATIVAS',
+                  style: TextStyle(
+                      fontFamily: fontFamily,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                      color: context.lume.inkMuted)),
+              Text('toque para marcar a correta',
+                  style: TextStyle(
+                      fontFamily: fontFamily,
+                      fontSize: 12,
+                      color: context.lume.inkMuted)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ...List.generate(responseType == _ResponseType.duasOpcoes ? 2 : 4,
+              (i) {
+            final selected = correctIndex == i;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: GestureDetector(
+                onTap: () => onCorrectIndexChanged(i),
+                child: Container(
+                  constraints: const BoxConstraints(minHeight: 58),
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? context.lume.surface
+                        : context.lume.background,
+                    border: Border.all(
+                        color: selected
+                            ? context.lume.primary
+                            : context.lume.outline,
+                        width: selected ? 1.5 : 1),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 26,
+                        height: 26,
+                        decoration: BoxDecoration(
+                            color: selected
+                                ? context.lume.primary
+                                : context.lume.surface,
+                            borderRadius: BorderRadius.circular(9)),
+                        alignment: Alignment.center,
+                        child: Text(String.fromCharCode(65 + i),
+                            style: TextStyle(
+                                fontFamily: fontFamily,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: selected
+                                    ? context.lume.background
+                                    : context.lume.inkMuted)),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: altControllers[i],
+                          style: TextStyle(
+                              fontFamily: fontFamily,
+                              fontSize: 16,
+                              color: context.lume.ink),
+                          decoration: const InputDecoration(
+                              isCollapsed: true, border: InputBorder.none),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+        ],
+      ],
+    );
+  }
 }
 
 class _AiModeForm extends StatelessWidget {
@@ -823,139 +961,6 @@ class _AiModeForm extends StatelessWidget {
             fontFamily: fontFamily,
             placeholder:
                 'Opcional: descreva o foco. Ex. "só os pares cranianos".'),
-      ],
-    );
-  }
-}
-
-class _TypeModeForm extends StatelessWidget {
-  const _TypeModeForm({
-    required this.fontFamily,
-    required this.frontController,
-    required this.backController,
-    required this.responseType,
-    required this.onResponseTypeChanged,
-    required this.altControllers,
-    required this.correctIndex,
-    required this.onCorrectIndexChanged,
-  });
-
-  final String? fontFamily;
-  final TextEditingController frontController;
-  final TextEditingController backController;
-  final _ResponseType responseType;
-  final ValueChanged<_ResponseType> onResponseTypeChanged;
-  final List<TextEditingController> altControllers;
-  final int correctIndex;
-  final ValueChanged<int> onCorrectIndexChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const LumeFieldLabel('Frente'),
-        _MultilineBox(
-            controller: frontController, minHeight: 88, fontFamily: fontFamily),
-        const SizedBox(height: 20),
-        const LumeFieldLabel('Tipo de resposta'),
-        LumeSegmentedTabs<_ResponseType>(
-          options: const [
-            _ResponseType.texto,
-            _ResponseType.duasOpcoes,
-            _ResponseType.quatroOpcoes
-          ],
-          labels: const ['Texto', '2 opções', '4 opções'],
-          value: responseType,
-          onChanged: onResponseTypeChanged,
-        ),
-        const SizedBox(height: 20),
-        if (responseType == _ResponseType.texto) ...[
-          const LumeFieldLabel('Verso'),
-          _MultilineBox(
-              controller: backController,
-              minHeight: 88,
-              fontFamily: fontFamily,
-              placeholder: 'Toque para escrever a resposta'),
-        ] else ...[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('ALTERNATIVAS',
-                  style: TextStyle(
-                      fontFamily: fontFamily,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.8,
-                      color: context.lume.inkMuted)),
-              Text('toque para marcar a correta',
-                  style: TextStyle(
-                      fontFamily: fontFamily,
-                      fontSize: 12,
-                      color: context.lume.inkMuted)),
-            ],
-          ),
-          const SizedBox(height: 10),
-          ...List.generate(responseType == _ResponseType.duasOpcoes ? 2 : 4,
-              (i) {
-            final selected = correctIndex == i;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: GestureDetector(
-                onTap: () => onCorrectIndexChanged(i),
-                child: Container(
-                  constraints: const BoxConstraints(minHeight: 58),
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? context.lume.surface
-                        : context.lume.background,
-                    border: Border.all(
-                        color: selected
-                            ? context.lume.primary
-                            : context.lume.outline,
-                        width: selected ? 1.5 : 1),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 26,
-                        height: 26,
-                        decoration: BoxDecoration(
-                            color: selected
-                                ? context.lume.primary
-                                : context.lume.surface,
-                            borderRadius: BorderRadius.circular(9)),
-                        alignment: Alignment.center,
-                        child: Text(String.fromCharCode(65 + i),
-                            style: TextStyle(
-                                fontFamily: fontFamily,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: selected
-                                    ? context.lume.background
-                                    : context.lume.inkMuted)),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          controller: altControllers[i],
-                          style: TextStyle(
-                              fontFamily: fontFamily,
-                              fontSize: 16,
-                              color: context.lume.ink),
-                          decoration: const InputDecoration(
-                              isCollapsed: true, border: InputBorder.none),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }),
-        ],
       ],
     );
   }
