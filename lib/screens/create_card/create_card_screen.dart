@@ -400,9 +400,39 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
                     ),
                     const SizedBox(height: 22),
                     if (_mode == _EntryMode.type)
-                      ..._buildTypeMode(fontFamily)
+                      _TypeModeForm(
+                        fontFamily: fontFamily,
+                        frontController: _frontController,
+                        backController: _backController,
+                        responseType: _responseType,
+                        onResponseTypeChanged: (t) =>
+                            setState(() => _responseType = t),
+                        altControllers: _altControllers,
+                        correctIndex: _correctIndex,
+                        onCorrectIndexChanged: (i) =>
+                            setState(() => _correctIndex = i),
+                      )
                     else
-                      ..._buildAiMode(fontFamily),
+                      _AiModeForm(
+                        fontFamily: fontFamily,
+                        aiState: _aiState,
+                        generated: _generated,
+                        picked: _picked,
+                        onTogglePicked: (i) => setState(
+                            () => _picked.contains(i)
+                                ? _picked.remove(i)
+                                : _picked.add(i)),
+                        onRegenerate: _generate,
+                        attachSources: _attachSources,
+                        onToggleSource: (id) => setState(() {
+                          if (_attachSources.contains(id)) {
+                            _attachSources.remove(id);
+                          } else {
+                            _attachSources.add(id);
+                          }
+                        }),
+                        focusController: _focusController,
+                      ),
                   ],
                 ),
               ),
@@ -435,440 +465,499 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
     );
   }
 
-  List<Widget> _buildTypeMode(String? fontFamily) {
-    return [
-      const LumeFieldLabel('Frente'),
-      _MultilineBox(
-          controller: _frontController, minHeight: 88, fontFamily: fontFamily),
-      const SizedBox(height: 20),
-      const LumeFieldLabel('Tipo de resposta'),
-      LumeSegmentedTabs<_ResponseType>(
-        options: const [
-          _ResponseType.texto,
-          _ResponseType.duasOpcoes,
-          _ResponseType.quatroOpcoes
-        ],
-        labels: const ['Texto', '2 opções', '4 opções'],
-        value: _responseType,
-        onChanged: (t) => setState(() => _responseType = t),
-      ),
-      const SizedBox(height: 20),
-      if (_responseType == _ResponseType.texto) ...[
-        const LumeFieldLabel('Verso'),
-        _MultilineBox(
-            controller: _backController,
-            minHeight: 88,
-            fontFamily: fontFamily,
-            placeholder: 'Toque para escrever a resposta'),
-      ] else ...[
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('ALTERNATIVAS',
-                style: TextStyle(
-                    fontFamily: fontFamily,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.8,
-                    color: context.lume.inkMuted)),
-            Text('toque para marcar a correta',
-                style: TextStyle(
-                    fontFamily: fontFamily,
-                    fontSize: 12,
-                    color: context.lume.inkMuted)),
-          ],
-        ),
-        const SizedBox(height: 10),
-        ...List.generate(_responseType == _ResponseType.duasOpcoes ? 2 : 4,
-            (i) {
-          final selected = _correctIndex == i;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: GestureDetector(
-              onTap: () => setState(() => _correctIndex = i),
-              child: Container(
-                constraints: const BoxConstraints(minHeight: 58),
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                decoration: BoxDecoration(
-                  color:
-                      selected ? context.lume.surface : context.lume.background,
-                  border: Border.all(
-                      color: selected
-                          ? context.lume.primary
-                          : context.lume.outline,
-                      width: selected ? 1.5 : 1),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 26,
-                      height: 26,
-                      decoration: BoxDecoration(
-                          color: selected
-                              ? context.lume.primary
-                              : context.lume.surface,
-                          borderRadius: BorderRadius.circular(9)),
-                      alignment: Alignment.center,
-                      child: Text(String.fromCharCode(65 + i),
-                          style: TextStyle(
-                              fontFamily: fontFamily,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: selected
-                                  ? context.lume.background
-                                  : context.lume.inkMuted)),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextField(
-                        controller: _altControllers[i],
-                        style: TextStyle(
-                            fontFamily: fontFamily,
-                            fontSize: 16,
-                            color: context.lume.ink),
-                        decoration: const InputDecoration(
-                            isCollapsed: true, border: InputBorder.none),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }),
-      ],
-    ];
-  }
+}
 
-  List<Widget> _buildAiMode(String? fontFamily) {
-    if (_aiState == _AiState.loading) {
-      return [
-        Row(
-          children: [
-            const _PulsingDot(),
-            const SizedBox(width: 10),
-            Text('Lendo seu material…',
-                style: TextStyle(
-                    fontFamily: fontFamily,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: context.lume.primary)),
-          ],
-        ),
-        const SizedBox(height: 14),
-        ...List.generate(
-            3,
-            (i) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _ShimmerBlock(delay: Duration(milliseconds: i * 150)),
-                )),
-      ];
-    }
+class _AiModeForm extends StatelessWidget {
+  const _AiModeForm({
+    required this.fontFamily,
+    required this.aiState,
+    required this.generated,
+    required this.picked,
+    required this.onTogglePicked,
+    required this.onRegenerate,
+    required this.attachSources,
+    required this.onToggleSource,
+    required this.focusController,
+  });
 
-    if (_aiState == _AiState.done) {
-      return [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('${_generated.length} cartões gerados',
-                style: TextStyle(
-                    fontFamily: fontFamily,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: context.lume.ink)),
-            TextButton(
-              onPressed: _generate,
-              child: Text('Refazer',
+  final String? fontFamily;
+  final _AiState aiState;
+  final List<_GeneratedCard> generated;
+  final Set<int> picked;
+  final ValueChanged<int> onTogglePicked;
+  final VoidCallback onRegenerate;
+  final Set<String> attachSources;
+  final ValueChanged<String> onToggleSource;
+  final TextEditingController focusController;
+
+  @override
+  Widget build(BuildContext context) {
+    if (aiState == _AiState.loading) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const _PulsingDot(),
+              const SizedBox(width: 10),
+              Text('Lendo seu material…',
                   style: TextStyle(
                       fontFamily: fontFamily,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: context.lume.primary)),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        ...List.generate(_generated.length, (i) {
-          final g = _generated[i];
-          final picked = _picked.contains(i);
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: GestureDetector(
-              onTap: () =>
-                  setState(() => picked ? _picked.remove(i) : _picked.add(i)),
-              child: Container(
-                padding: const EdgeInsets.all(15),
-                decoration: BoxDecoration(
-                  color: context.lume.background,
-                  border: Border.all(
-                      color:
-                          picked ? context.lume.accent : context.lume.outline),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          width: 22,
-                          height: 22,
-                          margin: const EdgeInsets.only(top: 2, right: 12),
-                          decoration: BoxDecoration(
-                            color: picked
-                                ? context.lume.primary
-                                : Colors.transparent,
-                            border: Border.all(
-                                color: picked
-                                    ? context.lume.primary
-                                    : context.lume.outline,
-                                width: 1.5),
-                            borderRadius: BorderRadius.circular(7),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ...List.generate(
+              3,
+              (i) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child:
+                        _ShimmerBlock(delay: Duration(milliseconds: i * 150)),
+                  )),
+        ],
+      );
+    }
+
+    if (aiState == _AiState.done) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('${generated.length} cartões gerados',
+                  style: TextStyle(
+                      fontFamily: fontFamily,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: context.lume.ink)),
+              TextButton(
+                onPressed: onRegenerate,
+                child: Text('Refazer',
+                    style: TextStyle(
+                        fontFamily: fontFamily,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: context.lume.primary)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          ...List.generate(generated.length, (i) {
+            final g = generated[i];
+            final isPicked = picked.contains(i);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: GestureDetector(
+                onTap: () => onTogglePicked(i),
+                child: Container(
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    color: context.lume.background,
+                    border: Border.all(
+                        color: isPicked
+                            ? context.lume.accent
+                            : context.lume.outline),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 22,
+                            height: 22,
+                            margin: const EdgeInsets.only(top: 2, right: 12),
+                            decoration: BoxDecoration(
+                              color: isPicked
+                                  ? context.lume.primary
+                                  : Colors.transparent,
+                              border: Border.all(
+                                  color: isPicked
+                                      ? context.lume.primary
+                                      : context.lume.outline,
+                                  width: 1.5),
+                              borderRadius: BorderRadius.circular(7),
+                            ),
+                            child: isPicked
+                                ? Icon(Icons.check_rounded,
+                                    size: 14, color: context.lume.background)
+                                : null,
                           ),
-                          child: picked
-                              ? Icon(Icons.check_rounded,
-                                  size: 14, color: context.lume.background)
-                              : null,
-                        ),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(g.tag,
+                                    style: TextStyle(
+                                        fontFamily: fontFamily,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.9,
+                                        color: g.type == CardType.text
+                                            ? context.lume.inkMuted
+                                            : context.lume.primary)),
+                                const SizedBox(height: 6),
+                                Text(g.front,
+                                    style: TextStyle(
+                                        fontFamily: fontFamily,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        height: 1.35,
+                                        color: context.lume.ink)),
+                                const SizedBox(height: 4),
+                                Text(g.back,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                        fontFamily: fontFamily,
+                                        fontSize: 13,
+                                        color: context.lume.inkMuted)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (g.type == CardType.audio) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                              color: context.lume.surface,
+                              borderRadius: BorderRadius.circular(14)),
+                          child: Row(
                             children: [
-                              Text(g.tag,
-                                  style: TextStyle(
-                                      fontFamily: fontFamily,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: 0.9,
-                                      color: g.type == CardType.text
-                                          ? context.lume.inkMuted
-                                          : context.lume.primary)),
+                              GestureDetector(
+                                onTap: () => showLumeToast(
+                                    context, 'Tocando o trecho de áudio'),
+                                child: Container(
+                                  width: 38,
+                                  height: 38,
+                                  decoration: BoxDecoration(
+                                      color: context.lume.primary,
+                                      shape: BoxShape.circle),
+                                  child: Icon(Icons.play_arrow_rounded,
+                                      size: 14,
+                                      color: context.lume.background),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                  child: Text(
+                                      '0:${g.audioSeconds.toString().padLeft(2, '0')}',
+                                      style: TextStyle(
+                                          fontFamily: fontFamily,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: context.lume.inkMuted))),
+                            ],
+                          ),
+                        ),
+                      ],
+                      if (g.type == CardType.image) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          decoration: BoxDecoration(
+                              color: context.lume.surface,
+                              borderRadius: BorderRadius.circular(14)),
+                          child: Column(
+                            children: [
+                              Icon(Icons.image_outlined,
+                                  size: 22, color: context.lume.inkMuted),
                               const SizedBox(height: 6),
-                              Text(g.front,
+                              Text(g.mediaCaption ?? '',
                                   style: TextStyle(
                                       fontFamily: fontFamily,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      height: 1.35,
-                                      color: context.lume.ink)),
-                              const SizedBox(height: 4),
-                              Text(g.back,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                      fontFamily: fontFamily,
-                                      fontSize: 13,
+                                      fontSize: 11,
                                       color: context.lume.inkMuted)),
                             ],
                           ),
                         ),
                       ],
-                    ),
-                    if (g.type == CardType.audio) ...[
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 10),
-                        decoration: BoxDecoration(
-                            color: context.lume.surface,
-                            borderRadius: BorderRadius.circular(14)),
-                        child: Row(
-                          children: [
-                            GestureDetector(
-                              onTap: () => showLumeToast(
-                                  context, 'Tocando o trecho de áudio'),
-                              child: Container(
-                                width: 38,
-                                height: 38,
-                                decoration: BoxDecoration(
-                                    color: context.lume.primary,
-                                    shape: BoxShape.circle),
-                                child: Icon(Icons.play_arrow_rounded,
-                                    size: 14, color: context.lume.background),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                                child: Text(
-                                    '0:${g.audioSeconds.toString().padLeft(2, '0')}',
-                                    style: TextStyle(
-                                        fontFamily: fontFamily,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: context.lume.inkMuted))),
-                          ],
-                        ),
-                      ),
                     ],
-                    if (g.type == CardType.image) ...[
-                      const SizedBox(height: 12),
+                  ),
+                ),
+              ),
+            );
+          }),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          decoration: BoxDecoration(
+            color: context.lume.surface,
+            borderRadius: BorderRadius.circular(22),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Anexe seu material',
+                  style: TextStyle(
+                      fontFamily: fontFamily,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: context.lume.ink)),
+              const SizedBox(height: 4),
+              Text('Foto do caderno, áudio da aula, vídeo ou PDF.',
+                  style: TextStyle(
+                      fontFamily: fontFamily,
+                      fontSize: 13,
+                      height: 1.45,
+                      color: context.lume.inkMuted)),
+              const SizedBox(height: 16),
+              GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: 4,
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8,
+                childAspectRatio: 0.85,
+                children: _sources.map((src) {
+                  final on = attachSources.contains(src.id);
+                  return GestureDetector(
+                    onTap: () => onToggleSource(src.id),
+                    child: Container(
+                      decoration: BoxDecoration(
+                          color: on
+                              ? context.lume.primary
+                              : context.lume.background,
+                          borderRadius: BorderRadius.circular(16)),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(src.icon,
+                              size: 20,
+                              color: on
+                                  ? context.lume.background
+                                  : context.lume.ink),
+                          const SizedBox(height: 5),
+                          Text(src.label,
+                              style: TextStyle(
+                                  fontFamily: fontFamily,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: on
+                                      ? context.lume.background
+                                      : context.lume.ink)),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+        ),
+        if (attachSources.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          ..._sources.where((s) => attachSources.contains(s.id)).map((src) =>
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                      color: context.lume.surface,
+                      borderRadius: BorderRadius.circular(16)),
+                  child: Row(
+                    children: [
                       Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        width: 34,
+                        height: 34,
                         decoration: BoxDecoration(
-                            color: context.lume.surface,
-                            borderRadius: BorderRadius.circular(14)),
+                            color: context.lume.background,
+                            borderRadius: BorderRadius.circular(11)),
+                        alignment: Alignment.center,
+                        child:
+                            Icon(src.icon, size: 16, color: context.lume.ink),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
                         child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Icons.image_outlined,
-                                size: 22, color: context.lume.inkMuted),
-                            const SizedBox(height: 6),
-                            Text(g.mediaCaption ?? '',
+                            Text(src.file,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                     fontFamily: fontFamily,
-                                    fontSize: 11,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: context.lume.ink)),
+                            const SizedBox(height: 2),
+                            Text(src.size,
+                                style: TextStyle(
+                                    fontFamily: fontFamily,
+                                    fontSize: 12,
                                     color: context.lume.inkMuted)),
                           ],
                         ),
                       ),
+                      IconButton(
+                        onPressed: () => onToggleSource(src.id),
+                        icon: Icon(Icons.close_rounded,
+                            size: 18, color: context.lume.inkMuted),
+                        tooltip: 'Remover anexo',
+                      ),
                     ],
-                  ],
+                  ),
                 ),
-              ),
-            ),
-          );
-        }),
-      ];
-    }
+              )),
+        ],
+        const SizedBox(height: 12),
+        _MultilineBox(
+            controller: focusController,
+            minHeight: 76,
+            fontFamily: fontFamily,
+            placeholder:
+                'Opcional: descreva o foco. Ex. "só os pares cranianos".'),
+      ],
+    );
+  }
+}
 
-    return [
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-        decoration: BoxDecoration(
-          color: context.lume.surface,
-          borderRadius: BorderRadius.circular(22),
+class _TypeModeForm extends StatelessWidget {
+  const _TypeModeForm({
+    required this.fontFamily,
+    required this.frontController,
+    required this.backController,
+    required this.responseType,
+    required this.onResponseTypeChanged,
+    required this.altControllers,
+    required this.correctIndex,
+    required this.onCorrectIndexChanged,
+  });
+
+  final String? fontFamily;
+  final TextEditingController frontController;
+  final TextEditingController backController;
+  final _ResponseType responseType;
+  final ValueChanged<_ResponseType> onResponseTypeChanged;
+  final List<TextEditingController> altControllers;
+  final int correctIndex;
+  final ValueChanged<int> onCorrectIndexChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const LumeFieldLabel('Frente'),
+        _MultilineBox(
+            controller: frontController, minHeight: 88, fontFamily: fontFamily),
+        const SizedBox(height: 20),
+        const LumeFieldLabel('Tipo de resposta'),
+        LumeSegmentedTabs<_ResponseType>(
+          options: const [
+            _ResponseType.texto,
+            _ResponseType.duasOpcoes,
+            _ResponseType.quatroOpcoes
+          ],
+          labels: const ['Texto', '2 opções', '4 opções'],
+          value: responseType,
+          onChanged: onResponseTypeChanged,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Anexe seu material',
-                style: TextStyle(
-                    fontFamily: fontFamily,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: context.lume.ink)),
-            const SizedBox(height: 4),
-            Text('Foto do caderno, áudio da aula, vídeo ou PDF.',
-                style: TextStyle(
-                    fontFamily: fontFamily,
-                    fontSize: 13,
-                    height: 1.45,
-                    color: context.lume.inkMuted)),
-            const SizedBox(height: 16),
-            GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 4,
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-              childAspectRatio: 0.85,
-              children: _sources.map((src) {
-                final on = _attachSources.contains(src.id);
-                return GestureDetector(
-                  onTap: () => setState(() {
-                    if (on) {
-                      _attachSources.remove(src.id);
-                    } else {
-                      _attachSources.add(src.id);
-                    }
-                  }),
-                  child: Container(
-                    decoration: BoxDecoration(
-                        color:
-                            on ? context.lume.primary : context.lume.background,
-                        borderRadius: BorderRadius.circular(16)),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(src.icon,
-                            size: 20,
-                            color: on
-                                ? context.lume.background
-                                : context.lume.ink),
-                        const SizedBox(height: 5),
-                        Text(src.label,
+        const SizedBox(height: 20),
+        if (responseType == _ResponseType.texto) ...[
+          const LumeFieldLabel('Verso'),
+          _MultilineBox(
+              controller: backController,
+              minHeight: 88,
+              fontFamily: fontFamily,
+              placeholder: 'Toque para escrever a resposta'),
+        ] else ...[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('ALTERNATIVAS',
+                  style: TextStyle(
+                      fontFamily: fontFamily,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                      color: context.lume.inkMuted)),
+              Text('toque para marcar a correta',
+                  style: TextStyle(
+                      fontFamily: fontFamily,
+                      fontSize: 12,
+                      color: context.lume.inkMuted)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ...List.generate(responseType == _ResponseType.duasOpcoes ? 2 : 4,
+              (i) {
+            final selected = correctIndex == i;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: GestureDetector(
+                onTap: () => onCorrectIndexChanged(i),
+                child: Container(
+                  constraints: const BoxConstraints(minHeight: 58),
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? context.lume.surface
+                        : context.lume.background,
+                    border: Border.all(
+                        color: selected
+                            ? context.lume.primary
+                            : context.lume.outline,
+                        width: selected ? 1.5 : 1),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 26,
+                        height: 26,
+                        decoration: BoxDecoration(
+                            color: selected
+                                ? context.lume.primary
+                                : context.lume.surface,
+                            borderRadius: BorderRadius.circular(9)),
+                        alignment: Alignment.center,
+                        child: Text(String.fromCharCode(65 + i),
                             style: TextStyle(
                                 fontFamily: fontFamily,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: on
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: selected
                                     ? context.lume.background
-                                    : context.lume.ink)),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
-      ),
-      if (_attachSources.isNotEmpty) ...[
-        const SizedBox(height: 12),
-        ..._sources.where((s) => _attachSources.contains(s.id)).map((src) =>
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                    color: context.lume.surface,
-                    borderRadius: BorderRadius.circular(16)),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 34,
-                      height: 34,
-                      decoration: BoxDecoration(
-                          color: context.lume.background,
-                          borderRadius: BorderRadius.circular(11)),
-                      alignment: Alignment.center,
-                      child: Icon(src.icon, size: 16, color: context.lume.ink),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(src.file,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                  fontFamily: fontFamily,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: context.lume.ink)),
-                          const SizedBox(height: 2),
-                          Text(src.size,
-                              style: TextStyle(
-                                  fontFamily: fontFamily,
-                                  fontSize: 12,
-                                  color: context.lume.inkMuted)),
-                        ],
+                                    : context.lume.inkMuted)),
                       ),
-                    ),
-                    IconButton(
-                      onPressed: () =>
-                          setState(() => _attachSources.remove(src.id)),
-                      icon: Icon(Icons.close_rounded,
-                          size: 18, color: context.lume.inkMuted),
-                      tooltip: 'Remover anexo',
-                    ),
-                  ],
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: altControllers[i],
+                          style: TextStyle(
+                              fontFamily: fontFamily,
+                              fontSize: 16,
+                              color: context.lume.ink),
+                          decoration: const InputDecoration(
+                              isCollapsed: true, border: InputBorder.none),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            )),
+            );
+          }),
+        ],
       ],
-      const SizedBox(height: 12),
-      _MultilineBox(
-          controller: _focusController,
-          minHeight: 76,
-          fontFamily: fontFamily,
-          placeholder:
-              'Opcional: descreva o foco. Ex. "só os pares cranianos".'),
-    ];
+    );
   }
 }
 

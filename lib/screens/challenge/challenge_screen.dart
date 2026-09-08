@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../models/deck.dart';
 import '../../state/app_state.dart';
 import '../../theme/lume_colors.dart';
 import '../../theme/lume_metrics.dart';
@@ -87,9 +88,27 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                   ),
                   const SizedBox(height: 20),
                   if (_tab == _ChallengeTab.fromAI)
-                    ..._buildAiTab(app, fontFamily)
+                    _AiChallengeTab(app: app, fontFamily: fontFamily)
                   else
-                    ..._buildOwnTab(app, fontFamily),
+                    _OwnChallengeTab(
+                      fontFamily: fontFamily,
+                      nameController: _nameController,
+                      decks: app.decks,
+                      selectedDecks: _selectedDecks,
+                      onToggleDeck: (id) => setState(() {
+                        if (_selectedDecks.contains(id)) {
+                          _selectedDecks.remove(id);
+                        } else {
+                          _selectedDecks.add(id);
+                        }
+                      }),
+                      questionCount: _questionCount,
+                      onQuestionCountChanged: (v) => setState(() => _questionCount = v),
+                      deadline: _deadline,
+                      onDeadlineChanged: (d) => setState(() => _deadline = d),
+                      weakCardsOnly: _weakCardsOnly,
+                      onWeakCardsOnlyChanged: (v) => setState(() => _weakCardsOnly = v),
+                    ),
                 ],
               ),
             ),
@@ -120,8 +139,19 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
     );
   }
 
-  List<Widget> _buildAiTab(AppState app, String? fontFamily) {
-    return [
+}
+
+class _AiChallengeTab extends StatelessWidget {
+  const _AiChallengeTab({required this.app, required this.fontFamily});
+
+  final AppState app;
+  final String? fontFamily;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
       Container(
         padding: const EdgeInsets.all(LumeSpacing.cardPadding),
         decoration: BoxDecoration(
@@ -292,28 +322,54 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
               ),
             ),
           )),
-    ];
+      ],
+    );
   }
+}
 
-  List<Widget> _buildOwnTab(AppState app, String? fontFamily) {
-    return [
-      LumeTextField(label: 'Nome do desafio', controller: _nameController),
+class _OwnChallengeTab extends StatelessWidget {
+  const _OwnChallengeTab({
+    required this.fontFamily,
+    required this.nameController,
+    required this.decks,
+    required this.selectedDecks,
+    required this.onToggleDeck,
+    required this.questionCount,
+    required this.onQuestionCountChanged,
+    required this.deadline,
+    required this.onDeadlineChanged,
+    required this.weakCardsOnly,
+    required this.onWeakCardsOnlyChanged,
+  });
+
+  final String? fontFamily;
+  final TextEditingController nameController;
+  final List<Deck> decks;
+  final Set<String> selectedDecks;
+  final ValueChanged<String> onToggleDeck;
+  final int questionCount;
+  final ValueChanged<int> onQuestionCountChanged;
+  final String deadline;
+  final ValueChanged<String> onDeadlineChanged;
+  final bool weakCardsOnly;
+  final ValueChanged<bool> onWeakCardsOnlyChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+      LumeTextField(label: 'Nome do desafio', controller: nameController),
       const SizedBox(height: 22),
       const LumeFieldLabel('Baralhos incluídos'),
       Wrap(
         spacing: 8,
         runSpacing: 8,
-        children: app.decks
+        children: decks
             .map((d) => LumeChip(
                   label: d.shortName,
-                  selected: _selectedDecks.contains(d.id),
-                  onTap: () => setState(() {
-                    if (_selectedDecks.contains(d.id)) {
-                      _selectedDecks.remove(d.id);
-                    } else {
-                      _selectedDecks.add(d.id);
-                    }
-                  }),
+                  selected: selectedDecks.contains(d.id),
+                  onTap: () => onToggleDeck(d.id),
                 ))
             .toList(),
       ),
@@ -330,7 +386,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('$_questionCount',
+            Text('$questionCount',
                 style: TextStyle(
                     fontFamily: fontFamily,
                     fontSize: 26,
@@ -343,16 +399,16 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                     semanticLabel: 'Menos perguntas',
                     filled: true,
                     size: 46,
-                    onPressed: () => setState(() => _questionCount =
-                        (_questionCount - 5).clamp(5, 40).toInt())),
+                    onPressed: () => onQuestionCountChanged(
+                        (questionCount - 5).clamp(5, 40).toInt())),
                 const SizedBox(width: 8),
                 LumeIconButton(
                     icon: Icons.add_rounded,
                     semanticLabel: 'Mais perguntas',
                     filled: true,
                     size: 46,
-                    onPressed: () => setState(() => _questionCount =
-                        (_questionCount + 5).clamp(5, 40).toInt())),
+                    onPressed: () => onQuestionCountChanged(
+                        (questionCount + 5).clamp(5, 40).toInt())),
               ],
             ),
           ],
@@ -365,8 +421,8 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
         children: ['3 dias', '1 semana', '1 mês']
             .map((d) => LumeChip(
                 label: d,
-                selected: _deadline == d,
-                onTap: () => setState(() => _deadline = d)))
+                selected: deadline == d,
+                onTap: () => onDeadlineChanged(d)))
             .toList(),
       ),
       const SizedBox(height: 22),
@@ -397,13 +453,14 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
               ),
             ),
             LumeSwitch(
-                value: _weakCardsOnly,
+                value: weakCardsOnly,
                 semanticLabel: 'Só cartões que eu erro',
-                onChanged: (v) => setState(() => _weakCardsOnly = v)),
+                onChanged: onWeakCardsOnlyChanged),
           ],
         ),
       ),
-    ];
+      ],
+    );
   }
 }
 

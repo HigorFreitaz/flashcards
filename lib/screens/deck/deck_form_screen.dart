@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../state/app_state.dart';
 import '../../theme/lume_colors.dart';
 import '../../theme/lume_metrics.dart';
-import '../../widgets/feedback/lume_bottom_sheet.dart';
 import '../../widgets/buttons/lume_button.dart';
 import '../../widgets/chips/lume_chip.dart';
 import '../../widgets/inputs/lume_stepper.dart';
@@ -59,27 +58,19 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
   }
 
   Future<void> _openTimePicker() async {
-    final slots = <String>[];
-    for (var h = 6; h <= 23; h++) {
-      slots.add('${h.toString().padLeft(2, '0')}:00');
-      slots.add('${h.toString().padLeft(2, '0')}:30');
-    }
-    final choice = await showLumeActionSheet(
-      context,
-      title: 'Adicionar horário',
-      actions: slots
-          .map((t) =>
-              LumeSheetAction(label: t, checked: _reminderTimes.contains(t)))
-          .toList(),
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+      helpText: 'Adicionar horário',
     );
-    if (choice == null) return;
-    final picked = slots[choice];
-    if (_reminderTimes.contains(picked)) return;
+    if (picked == null || !mounted) return;
+    final formatted = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+    if (_reminderTimes.contains(formatted)) return;
     setState(() {
-      _reminderTimes = [..._reminderTimes, picked]..sort();
+      _reminderTimes = [..._reminderTimes, formatted]..sort();
       _remindersEnabled = true;
     });
-    if (mounted) showLumeToast(context, 'Lembrete adicionado às $picked');
+    showLumeToast(context, 'Lembrete adicionado às $formatted');
   }
 
   void _removeReminder(String time) {

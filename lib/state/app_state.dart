@@ -78,9 +78,7 @@ class AppState extends ChangeNotifier {
   }
 
   void showToast(String message) {
-    scaffoldMessengerKey.currentState?.showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    showGlobalLumeToast(message);
     // _toastMessage = message;
     // notifyListeners();
     // _toastTimer?.cancel();

@@ -29,16 +29,24 @@ class LumeMark extends StatelessWidget {
             Positioned(
               left: offset,
               top: offset,
-              child: _card(cardSize, context.lume.accent),
+              child: _MarkCard(cardSize: cardSize, color: context.lume.accent),
             ),
-            _card(cardSize, context.lume.background),
+            _MarkCard(cardSize: cardSize, color: context.lume.background),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _card(Size cardSize, Color color) {
+class _MarkCard extends StatelessWidget {
+  const _MarkCard({required this.cardSize, required this.color});
+
+  final Size cardSize;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       width: cardSize.width,
       height: cardSize.height,
