@@ -400,7 +400,18 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
                     ),
                     const SizedBox(height: 22),
                     if (_mode == _EntryMode.type)
-                      ..._buildTypeMode(fontFamily)
+                      _TypeModeForm(
+                        fontFamily: fontFamily,
+                        frontController: _frontController,
+                        backController: _backController,
+                        responseType: _responseType,
+                        onResponseTypeChanged: (t) =>
+                            setState(() => _responseType = t),
+                        altControllers: _altControllers,
+                        correctIndex: _correctIndex,
+                        onCorrectIndexChanged: (i) =>
+                            setState(() => _correctIndex = i),
+                      )
                     else
                       ..._buildAiMode(fontFamily),
                   ],
@@ -433,112 +444,6 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
         ),
       ),
     );
-  }
-
-  List<Widget> _buildTypeMode(String? fontFamily) {
-    return [
-      const LumeFieldLabel('Frente'),
-      _MultilineBox(
-          controller: _frontController, minHeight: 88, fontFamily: fontFamily),
-      const SizedBox(height: 20),
-      const LumeFieldLabel('Tipo de resposta'),
-      LumeSegmentedTabs<_ResponseType>(
-        options: const [
-          _ResponseType.texto,
-          _ResponseType.duasOpcoes,
-          _ResponseType.quatroOpcoes
-        ],
-        labels: const ['Texto', '2 opções', '4 opções'],
-        value: _responseType,
-        onChanged: (t) => setState(() => _responseType = t),
-      ),
-      const SizedBox(height: 20),
-      if (_responseType == _ResponseType.texto) ...[
-        const LumeFieldLabel('Verso'),
-        _MultilineBox(
-            controller: _backController,
-            minHeight: 88,
-            fontFamily: fontFamily,
-            placeholder: 'Toque para escrever a resposta'),
-      ] else ...[
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('ALTERNATIVAS',
-                style: TextStyle(
-                    fontFamily: fontFamily,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.8,
-                    color: context.lume.inkMuted)),
-            Text('toque para marcar a correta',
-                style: TextStyle(
-                    fontFamily: fontFamily,
-                    fontSize: 12,
-                    color: context.lume.inkMuted)),
-          ],
-        ),
-        const SizedBox(height: 10),
-        ...List.generate(_responseType == _ResponseType.duasOpcoes ? 2 : 4,
-            (i) {
-          final selected = _correctIndex == i;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: GestureDetector(
-              onTap: () => setState(() => _correctIndex = i),
-              child: Container(
-                constraints: const BoxConstraints(minHeight: 58),
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                decoration: BoxDecoration(
-                  color:
-                      selected ? context.lume.surface : context.lume.background,
-                  border: Border.all(
-                      color: selected
-                          ? context.lume.primary
-                          : context.lume.outline,
-                      width: selected ? 1.5 : 1),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 26,
-                      height: 26,
-                      decoration: BoxDecoration(
-                          color: selected
-                              ? context.lume.primary
-                              : context.lume.surface,
-                          borderRadius: BorderRadius.circular(9)),
-                      alignment: Alignment.center,
-                      child: Text(String.fromCharCode(65 + i),
-                          style: TextStyle(
-                              fontFamily: fontFamily,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: selected
-                                  ? context.lume.background
-                                  : context.lume.inkMuted)),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextField(
-                        controller: _altControllers[i],
-                        style: TextStyle(
-                            fontFamily: fontFamily,
-                            fontSize: 16,
-                            color: context.lume.ink),
-                        decoration: const InputDecoration(
-                            isCollapsed: true, border: InputBorder.none),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }),
-      ],
-    ];
   }
 
   List<Widget> _buildAiMode(String? fontFamily) {
@@ -869,6 +774,139 @@ class _CreateCardScreenState extends State<CreateCardScreen> {
           placeholder:
               'Opcional: descreva o foco. Ex. "só os pares cranianos".'),
     ];
+  }
+}
+
+class _TypeModeForm extends StatelessWidget {
+  const _TypeModeForm({
+    required this.fontFamily,
+    required this.frontController,
+    required this.backController,
+    required this.responseType,
+    required this.onResponseTypeChanged,
+    required this.altControllers,
+    required this.correctIndex,
+    required this.onCorrectIndexChanged,
+  });
+
+  final String? fontFamily;
+  final TextEditingController frontController;
+  final TextEditingController backController;
+  final _ResponseType responseType;
+  final ValueChanged<_ResponseType> onResponseTypeChanged;
+  final List<TextEditingController> altControllers;
+  final int correctIndex;
+  final ValueChanged<int> onCorrectIndexChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const LumeFieldLabel('Frente'),
+        _MultilineBox(
+            controller: frontController, minHeight: 88, fontFamily: fontFamily),
+        const SizedBox(height: 20),
+        const LumeFieldLabel('Tipo de resposta'),
+        LumeSegmentedTabs<_ResponseType>(
+          options: const [
+            _ResponseType.texto,
+            _ResponseType.duasOpcoes,
+            _ResponseType.quatroOpcoes
+          ],
+          labels: const ['Texto', '2 opções', '4 opções'],
+          value: responseType,
+          onChanged: onResponseTypeChanged,
+        ),
+        const SizedBox(height: 20),
+        if (responseType == _ResponseType.texto) ...[
+          const LumeFieldLabel('Verso'),
+          _MultilineBox(
+              controller: backController,
+              minHeight: 88,
+              fontFamily: fontFamily,
+              placeholder: 'Toque para escrever a resposta'),
+        ] else ...[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('ALTERNATIVAS',
+                  style: TextStyle(
+                      fontFamily: fontFamily,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                      color: context.lume.inkMuted)),
+              Text('toque para marcar a correta',
+                  style: TextStyle(
+                      fontFamily: fontFamily,
+                      fontSize: 12,
+                      color: context.lume.inkMuted)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ...List.generate(responseType == _ResponseType.duasOpcoes ? 2 : 4,
+              (i) {
+            final selected = correctIndex == i;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: GestureDetector(
+                onTap: () => onCorrectIndexChanged(i),
+                child: Container(
+                  constraints: const BoxConstraints(minHeight: 58),
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? context.lume.surface
+                        : context.lume.background,
+                    border: Border.all(
+                        color: selected
+                            ? context.lume.primary
+                            : context.lume.outline,
+                        width: selected ? 1.5 : 1),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 26,
+                        height: 26,
+                        decoration: BoxDecoration(
+                            color: selected
+                                ? context.lume.primary
+                                : context.lume.surface,
+                            borderRadius: BorderRadius.circular(9)),
+                        alignment: Alignment.center,
+                        child: Text(String.fromCharCode(65 + i),
+                            style: TextStyle(
+                                fontFamily: fontFamily,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: selected
+                                    ? context.lume.background
+                                    : context.lume.inkMuted)),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: altControllers[i],
+                          style: TextStyle(
+                              fontFamily: fontFamily,
+                              fontSize: 16,
+                              color: context.lume.ink),
+                          decoration: const InputDecoration(
+                              isCollapsed: true, border: InputBorder.none),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+        ],
+      ],
+    );
   }
 }
 
