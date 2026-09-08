@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 
+import 'dark/lume_dark_palette.dart';
+import 'light/lume_light_palette.dart';
+
 /// Paleta da Lume: um verde-petróleo carrega toda a ação, os cinzas fazem a
 /// hierarquia. Sem gradientes, sem cores de alerta decorativas.
 ///
 /// É um [ThemeExtension] para que o app troque de paleta (claro/escuro) sem
 /// que cada tela precise saber qual delas está ativa — basta ler
-/// `context.lume` em vez de uma constante fixa.
+/// `context.lume` em vez de uma constante fixa. Os valores de cada paleta
+/// vivem em [LumeLightPalette]/[LumeDarkPalette]; esta classe só descreve o
+/// formato compartilhado entre elas.
 @immutable
 class LumeColors extends ThemeExtension<LumeColors> {
   const LumeColors({
@@ -29,25 +34,25 @@ class LumeColors extends ThemeExtension<LumeColors> {
   final Color onPrimary;
 
   static const light = LumeColors(
-    primary: Color(0xFF006666),
-    accent: Color(0xFF008584),
-    background: Color(0xFFF5F5F5),
-    surface: Color(0xFFE9E9E9),
-    outline: Color(0xFFCCCCCC),
-    ink: Color(0xFF0D1B1A),
-    inkMuted: Color(0xFF5A6B69),
-    onPrimary: Color(0xFFF5F5F5),
+    primary: LumeLightPalette.primary,
+    accent: LumeLightPalette.accent,
+    background: LumeLightPalette.background,
+    surface: LumeLightPalette.surface,
+    outline: LumeLightPalette.outline,
+    ink: LumeLightPalette.ink,
+    inkMuted: LumeLightPalette.inkMuted,
+    onPrimary: LumeLightPalette.onPrimary,
   );
 
   static const dark = LumeColors(
-    primary: Color(0xFF2FBFB4),
-    accent: Color(0xFF57D6CB),
-    background: Color(0xFF0D1B1A),
-    surface: Color(0xFF17302D),
-    outline: Color(0xFF32504B),
-    ink: Color(0xFFF5F5F5),
-    inkMuted: Color(0xFF8FA6A3),
-    onPrimary: Color(0xFF0D1B1A),
+    primary: LumeDarkPalette.primary,
+    accent: LumeDarkPalette.accent,
+    background: LumeDarkPalette.background,
+    surface: LumeDarkPalette.surface,
+    outline: LumeDarkPalette.outline,
+    ink: LumeDarkPalette.ink,
+    inkMuted: LumeDarkPalette.inkMuted,
+    onPrimary: LumeDarkPalette.onPrimary,
   );
 
   @override
