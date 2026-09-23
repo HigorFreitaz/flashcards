@@ -31,8 +31,8 @@ A ideia é deixar o estudo cada vez mais individual e menos cansativo:
 
 ## Sobre o visual
 
-O design segue uma linha bem calma de propósito: sem gradientes chamativos, sem cor de alerta espalhada pela tela só pra "decorar". A ideia é que o app pareça um lugar tranquilo pra voltar todo dia, sem cansar a vista nem distrair de quem é o protagonista, que é o conteúdo que você está estudando.
+O design segue uma linha bem calma de propósito: sem gradientes chamativos, sem cor de alerta espalhada pela tela. A ideia é que o app pareça um lugar tranquilo sem cansar a vista nem distrair o usuário, ajudando ele a manter o foco.
 
-A cor de destaque é um verde-petróleo (a gente chama de "teal" por aqui), usado só onde importa: botões de ação, ícones ativos, coisas que você pode tocar. O resto da tela é neutro — cinza claro no tema claro, cinza escuro de verdade no tema escuro — pra esse verde nunca brigar com o texto nem cansar quem estuda por horas. Os cantos são arredondados, os toques têm um feedback suave (o botão "encolhe" um pouquinho quando você aperta), e cada ação principal fica sempre num lugar fácil de alcançar com o polegar, mesmo segurando o celular com uma mão só.
+A cor de destaque é um verde-petróleo, usado só onde importa: botões de ação, ícones ativos, coisas que você pode interagir. O resto da tela é neutro com um cinza claro no tema claro, cinza escuro de verdade no tema escuro, pra esse verde nunca brigar com o texto nem cansar quem estuda por horas. Os cantos são arredondados, os toques têm um feedback suave (o botão "encolhe" um pouquinho quando você aperta), e cada ação principal fica sempre num lugar fácil de alcançar com o polegar, mesmo segurando o celular com uma mão só.
 
-No fim das contas, a gente queria um app que parecesse feito por gente que também estuda — direto ao ponto, sem enfeite, mas com carinho nos detalhes.
+No fim das contas, a gente queria um app que parecesse algo simples e dinâmico.
