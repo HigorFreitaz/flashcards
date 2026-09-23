@@ -308,26 +308,14 @@ class _CreateCardViewState extends State<_CreateCardView> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: Text('Cancelar',
-                        style: TextStyle(
-                            fontFamily: fontFamily,
-                            fontSize: 16,
-                            color: context.lume.primary)),
-                  ),
-                  Text(isEditing ? 'Editar cartão' : 'Novo cartão',
-                      style: TextStyle(
-                          fontFamily: fontFamily,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: context.lume.ink)),
-                  const SizedBox(width: 62),
-                ],
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: Center(
+                child: Text(isEditing ? 'Editar cartão' : 'Novo cartão',
+                    style: TextStyle(
+                        fontFamily: fontFamily,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: context.lume.ink)),
               ),
             ),
             Expanded(
@@ -447,23 +435,49 @@ class _CreateCardViewState extends State<_CreateCardView> {
               SafeArea(
                 minimum: const EdgeInsets.fromLTRB(16, 10, 16, 10),
                 top: false,
-                child: LumeButton(
-                  label: _mode == _EntryMode.ai
-                      ? 'Salvar ${_picked.length} em ${targetDeck.shortName}'
-                      : (isEditing
-                          ? 'Salvar alterações'
-                          : 'Salvar em ${targetDeck.shortName}'),
-                  onPressed: () => _save(viewModel, targetDeck),
+                child: Row(
+                  children: [
+                    LumeButton(
+                      label: 'Cancelar',
+                      variant: LumeButtonVariant.secondary,
+                      expand: false,
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: LumeButton(
+                        label: _mode == _EntryMode.ai
+                            ? 'Salvar ${_picked.length} em ${targetDeck.shortName}'
+                            : (isEditing
+                                ? 'Salvar alterações'
+                                : 'Salvar em ${targetDeck.shortName}'),
+                        onPressed: () => _save(viewModel, targetDeck),
+                      ),
+                    ),
+                  ],
                 ),
               )
             else
               SafeArea(
                 minimum: const EdgeInsets.fromLTRB(16, 10, 16, 10),
                 top: false,
-                child: LumeButton(
-                    label: 'Gerar cartões',
-                    icon: Icons.auto_awesome_rounded,
-                    onPressed: _generate),
+                child: Row(
+                  children: [
+                    LumeButton(
+                      label: 'Cancelar',
+                      variant: LumeButtonVariant.secondary,
+                      expand: false,
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: LumeButton(
+                          label: 'Gerar cartões',
+                          icon: Icons.auto_awesome_rounded,
+                          onPressed: _generate),
+                    ),
+                  ],
+                ),
               ),
           ],
         ),

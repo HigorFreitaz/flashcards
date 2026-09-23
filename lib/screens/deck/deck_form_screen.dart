@@ -119,28 +119,16 @@ class _DeckFormViewState extends State<_DeckFormView> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: Text('Cancelar',
-                        style: TextStyle(
-                            fontFamily: fontFamily,
-                            fontSize: 16,
-                            color: context.lume.primary)),
-                  ),
-                  Text(
-                    viewModel.isEditing ? 'Editar baralho' : 'Novo baralho',
-                    style: TextStyle(
-                        fontFamily: fontFamily,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: context.lume.ink),
-                  ),
-                  const SizedBox(width: 62),
-                ],
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: Center(
+                child: Text(
+                  viewModel.isEditing ? 'Editar baralho' : 'Novo baralho',
+                  style: TextStyle(
+                      fontFamily: fontFamily,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: context.lume.ink),
+                ),
               ),
             ),
             Expanded(
@@ -341,9 +329,22 @@ class _DeckFormViewState extends State<_DeckFormView> {
             SafeArea(
               minimum: const EdgeInsets.fromLTRB(16, 10, 16, 10),
               top: false,
-              child: LumeButton(
-                  label: viewModel.isEditing ? 'Salvar alterações' : 'Criar baralho',
-                  onPressed: _save),
+              child: Row(
+                children: [
+                  LumeButton(
+                    label: 'Cancelar',
+                    variant: LumeButtonVariant.secondary,
+                    expand: false,
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: LumeButton(
+                        label: viewModel.isEditing ? 'Salvar alterações' : 'Criar baralho',
+                        onPressed: _save),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
