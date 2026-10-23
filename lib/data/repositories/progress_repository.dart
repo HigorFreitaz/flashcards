@@ -1,14 +1,71 @@
-/// Estatísticas de progresso e gamificação do usuário. Hoje são valores
-/// fixos (não há telemetria real de estudo); por isso é uma classe simples,
-/// sem [ChangeNotifier] — não existe mutação para propagar.
-class ProgressRepository {
-  final int streakDays = 12;
-  final int level = 7;
-  final int totalXp = 1240;
-  final int xpToNextLevel = 360;
-  final double weeklyAccuracy = 0.94;
-  final int minutesStudiedToday = 18;
+import 'package:flutter/foundation.dart';
+import '../services/api_service.dart';
+import '../../models/study_history_entry.dart';
 
-  /// Um marcador por dia da semana (seg. a dom.), true onde já houve estudo.
-  final List<bool> weekProgress = [true, true, false, false, false, false, false];
+/// Estatísticas de progresso e gamificação do usuário integradas à API REST.
+class ProgressRepository extends ChangeNotifier {
+  ProgressRepository([ApiService? apiService]) : _apiService = apiService {
+    if (_apiService?.authToken != null) {
+      fetchProgress();
+    }
+  }
+
+  bool _disposed = false;
+  @override
+  void notifyListeners() {
+    if (!_disposed) super.notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+
+  final ApiService? _apiService;
+
+  int streakDays = 0;
+  int level = 1;
+  int totalXp = 0;
+  int xpToNextLevel = 200;
+  double weeklyAccuracy = 0.0;
+  int minutesStudiedToday = 0;
+  int reviewedToday = 0;
+  List<bool> weekProgress = [false, false, false, false, false, false, false];
+
+  Future<void> fetchProgress() async {
+    if (_apiService == null) return;
+    try {
+      final res = await _apiService.get('/progress');
+      if (res is Map<String, dynamic>) {
+        streakDays = res['streakDays'] as int? ?? 0;
+        level = res['level'] as int? ?? 1;
+        totalXp = res['totalXp'] as int? ?? 0;
+        xpToNextLevel = res['xpToNextLevel'] as int? ?? 200;
+        weeklyAccuracy = (res['weeklyAccuracy'] as num?)?.toDouble() ?? 0.0;
+        minutesStudiedToday = res['minutesStudiedToday'] as int? ?? 0;
+        reviewedToday = res['reviewedToday'] as int? ?? 0;
+        if (res['weekProgress'] is List) {
+          weekProgress =
+              (res['weekProgress'] as List).map((e) => e == true).toList();
+        }
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Erro ao buscar progresso via API: $e');
+    }
+  }
+
+  Future<List<StudyHistoryEntry>> history({int offset = 0}) async {
+    final response =
+        await _apiService!.get('/progress/history?offset=$offset') as List;
+    return response
+        .map((item) => StudyHistoryEntry.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> reset() async {
+    await _apiService!.delete('/progress');
+    await fetchProgress();
+  }
 }

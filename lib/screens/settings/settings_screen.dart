@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../../data/repositories/settings_repository.dart';
 import '../../data/repositories/user_repository.dart';
+import '../../data/repositories/progress_repository.dart';
+import '../../data/repositories/challenge_repository.dart';
 import '../../models/app_user.dart';
 import '../../theme/lume_metrics.dart';
 import '../../theme/lume_theme.dart';
@@ -12,8 +14,8 @@ import '../../widgets/buttons/lume_button.dart';
 import '../../widgets/inputs/lume_switch.dart';
 import '../../widgets/inputs/lume_text_field.dart';
 import '../../widgets/feedback/lume_toast.dart';
-import '../auth/auth_screen.dart';
 import 'account_screen.dart';
+import '../study/progress_history_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -21,7 +23,11 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (ctx) => SettingsViewModel(ctx.read<UserRepository>(), ctx.read<SettingsRepository>()),
+      create: (ctx) => SettingsViewModel(
+          ctx.read<UserRepository>(),
+          ctx.read<SettingsRepository>(),
+          ctx.read<ProgressRepository>(),
+          ctx.read<ChallengeRepository>()),
       child: const _SettingsView(),
     );
   }
@@ -38,11 +44,11 @@ class _SettingsView extends StatelessWidget {
     );
     if (choice != 0 || !context.mounted) return;
     final viewModel = context.read<SettingsViewModel>();
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const AuthScreen()),
-          (route) => false,
-    );
-    viewModel.logout();
+    try {
+      await viewModel.logout();
+    } catch (error) {
+      if (context.mounted) showLumeToast(context, error.toString());
+    }
   }
 
   @override
@@ -71,17 +77,84 @@ class _SettingsView extends StatelessWidget {
           const LumeFieldLabel('Conta'),
           _AccountRow(
             user: viewModel.currentUser,
-            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AccountScreen())),
+            onTap: () => Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const AccountScreen())),
           ),
           const SizedBox(height: LumeSpacing.section),
+          ListTile(
+              title: const Text('Histórico de estudo'),
+              leading: const Icon(Icons.history),
+              onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const ProgressHistoryScreen()))),
+          ListTile(
+              title: const Text('Fuso horário'),
+              subtitle: Text(viewModel.timeZone),
+              onTap: () async {
+                final controller =
+                    TextEditingController(text: viewModel.timeZone);
+                final zone = await showDialog<String>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                            title: const Text('Fuso horário'),
+                            content: TextField(
+                                controller: controller,
+                                decoration: const InputDecoration(
+                                    hintText: 'America/Sao_Paulo')),
+                            actions: [
+                              TextButton(
+                                  onPressed: () => Navigator.pop(ctx),
+                                  child: const Text('Cancelar')),
+                              TextButton(
+                                  onPressed: () => Navigator.pop(
+                                      ctx, controller.text.trim()),
+                                  child: const Text('Salvar'))
+                            ]));
+                if (zone == null || !context.mounted) return;
+                try {
+                  await viewModel.setTimeZone(zone);
+                } catch (error) {
+                  if (context.mounted) showLumeToast(context, error.toString());
+                }
+              }),
+          ListTile(
+              title: const Text('Restaurar configurações'),
+              leading: const Icon(Icons.settings_backup_restore),
+              onTap: () async {
+                final yes = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                            title:
+                                const Text('Restaurar configurações padrão?'),
+                            actions: [
+                              TextButton(
+                                  onPressed: () => Navigator.pop(ctx, false),
+                                  child: const Text('Cancelar')),
+                              TextButton(
+                                  onPressed: () => Navigator.pop(ctx, true),
+                                  child: const Text('Restaurar'))
+                            ]));
+                if (yes != true || !context.mounted) return;
+                try {
+                  await viewModel.resetSettings();
+                } catch (error) {
+                  if (context.mounted) showLumeToast(context, error.toString());
+                }
+              }),
           const LumeFieldLabel('Segurança'),
           _ToggleRow(
             title: 'Bloqueio por biometria',
-            subtitle: 'Peça digital ou Face ID toda vez que o app voltar do segundo plano.',
+            subtitle:
+                'Peça digital ou Face ID toda vez que o app voltar do segundo plano.',
             value: viewModel.biometricLockEnabled,
             onChanged: (v) {
               viewModel.setBiometricLockEnabled(v);
-              showLumeToast(context, v ? 'Bloqueio por biometria ativado' : 'Bloqueio por biometria desativado');
+              showLumeToast(
+                  context,
+                  v
+                      ? 'Bloqueio por biometria ativado'
+                      : 'Bloqueio por biometria desativado');
             },
           ),
           const SizedBox(height: LumeSpacing.section),
@@ -90,7 +163,13 @@ class _SettingsView extends StatelessWidget {
             title: 'Tema escuro',
             subtitle: 'Troca a paleta clara pela escura em todo o app.',
             value: viewModel.isDarkMode,
-            onChanged: (v) => viewModel.setDarkModeEnabled(v),
+            onChanged: (v) async {
+              try {
+                await viewModel.setDarkModeEnabled(v);
+              } catch (error) {
+                if (context.mounted) showLumeToast(context, error.toString());
+              }
+            },
           ),
           const SizedBox(height: LumeSpacing.section),
           LumeButton(
@@ -130,11 +209,17 @@ class _AccountRow extends StatelessWidget {
               Container(
                 width: 46,
                 height: 46,
-                decoration: BoxDecoration(color: context.lume.surface, borderRadius: BorderRadius.circular(16)),
+                decoration: BoxDecoration(
+                    color: context.lume.surface,
+                    borderRadius: BorderRadius.circular(16)),
                 alignment: Alignment.center,
                 child: Text(
                   user.initials,
-                  style: TextStyle(fontFamily: fontFamily, fontSize: 15, fontWeight: FontWeight.w700, color: context.lume.primary),
+                  style: TextStyle(
+                      fontFamily: fontFamily,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: context.lume.primary),
                 ),
               ),
               const SizedBox(width: 13),
@@ -146,14 +231,21 @@ class _AccountRow extends StatelessWidget {
                       user.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontFamily: fontFamily, fontSize: 16, fontWeight: FontWeight.w600, color: context.lume.ink),
+                      style: TextStyle(
+                          fontFamily: fontFamily,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: context.lume.ink),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       user.email,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontFamily: fontFamily, fontSize: 13, color: context.lume.inkMuted),
+                      style: TextStyle(
+                          fontFamily: fontFamily,
+                          fontSize: 13,
+                          color: context.lume.inkMuted),
                     ),
                   ],
                 ),
@@ -168,7 +260,11 @@ class _AccountRow extends StatelessWidget {
 }
 
 class _ToggleRow extends StatelessWidget {
-  const _ToggleRow({required this.title, required this.subtitle, required this.value, required this.onChanged});
+  const _ToggleRow(
+      {required this.title,
+      required this.subtitle,
+      required this.value,
+      required this.onChanged});
 
   final String title;
   final String subtitle;
@@ -192,14 +288,25 @@ class _ToggleRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: TextStyle(fontFamily: fontFamily, fontSize: 15, fontWeight: FontWeight.w600, color: context.lume.ink)),
+                    Text(title,
+                        style: TextStyle(
+                            fontFamily: fontFamily,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: context.lume.ink)),
                     const SizedBox(height: 4),
-                    Text(subtitle, style: TextStyle(fontFamily: fontFamily, fontSize: 13, height: 1.4, color: context.lume.inkMuted)),
+                    Text(subtitle,
+                        style: TextStyle(
+                            fontFamily: fontFamily,
+                            fontSize: 13,
+                            height: 1.4,
+                            color: context.lume.inkMuted)),
                   ],
                 ),
               ),
               const SizedBox(width: 12),
-              LumeSwitch(value: value, semanticLabel: title, onChanged: onChanged),
+              LumeSwitch(
+                  value: value, semanticLabel: title, onChanged: onChanged),
             ],
           ),
         ),

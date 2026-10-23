@@ -14,6 +14,38 @@ class Deck {
         cards = cards ?? [],
         updatedAt = updatedAt ?? DateTime.now();
 
+  factory Deck.fromJson(Map<String, dynamic> json) {
+    return Deck(
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      description: json['description'] as String? ?? '',
+      dailyGoal: json['dailyGoal'] as int? ?? 20,
+      remindersEnabled: json['remindersEnabled'] as bool? ?? true,
+      reminderTimes: (json['reminderTimes'] as List<dynamic>?)
+          ?.map((e) => e.toString())
+          .toList(),
+      cards: (json['cards'] as List<dynamic>?)
+          ?.map((c) => Flashcard.fromJson(c as Map<String, dynamic>))
+          .toList(),
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.tryParse(json['updatedAt'].toString())
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'dailyGoal': dailyGoal,
+      'remindersEnabled': remindersEnabled,
+      'reminderTimes': reminderTimes,
+      'cards': cards.map((c) => c.toJson()).toList(),
+      'updatedAt': updatedAt.toIso8601String(),
+    };
+  }
+
   final String id;
   String name;
   String description;
@@ -25,11 +57,15 @@ class Deck {
 
   int get totalCount => cards.length;
 
-  int get dueCount => cards.where((c) => c.status == CardStatus.aRevisar).length;
+  int get dueCount => cards
+      .where((c) => !c.suspended && c.status == CardStatus.aRevisar)
+      .length;
 
-  int get newCount => cards.where((c) => c.status == CardStatus.novo).length;
+  int get newCount =>
+      cards.where((c) => !c.suspended && c.status == CardStatus.novo).length;
 
-  int get masteredCount => cards.where((c) => c.status == CardStatus.dominado).length;
+  int get masteredCount =>
+      cards.where((c) => c.status == CardStatus.dominado).length;
 
   double get masteryPercent => cards.isEmpty ? 0 : masteredCount / cards.length;
 
@@ -37,14 +73,16 @@ class Deck {
 
   /// Fila de estudo: cartões a revisar entram primeiro, depois os novos.
   List<Flashcard> get studyQueue => [
-        ...cards.where((c) => c.status == CardStatus.aRevisar),
-        ...cards.where((c) => c.status == CardStatus.novo),
+        ...cards.where((c) => !c.suspended && c.status == CardStatus.aRevisar),
+        ...cards.where((c) => !c.suspended && c.status == CardStatus.novo),
       ];
 
   String get initials {
     final trimmed = name.trim();
     if (trimmed.isEmpty) return '??';
-    return trimmed.length >= 2 ? trimmed.substring(0, 2).toUpperCase() : trimmed.toUpperCase();
+    return trimmed.length >= 2
+        ? trimmed.substring(0, 2).toUpperCase()
+        : trimmed.toUpperCase();
   }
 
   String get shortName => name.split(' — ').first;

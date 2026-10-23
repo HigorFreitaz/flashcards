@@ -1,47 +1,74 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.buildlog/
-.history
-.svn/
-migrate_working_dir/
+# Local environment and secrets (keep sanitized examples versioned)
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+*.jks
+*.keystore
+key.properties
 
-# IntelliJ related
-*.iml
-*.ipr
-*.iws
-.idea/
-
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
-**/doc/api/
+# Dependencies
+node_modules/
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
-/build/
 
-# Symbolication related
+# Generated builds, test coverage and packages
+build/
+coverage/
+*.apk
+*.aab
+/android/app/debug/
+/android/app/profile/
+/android/app/release/
+**/doc/api/
+
+# Local databases and database sidecar files
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+*.sqlite-shm
+*.sqlite-wal
+*.sqlite3-journal
+*.sqlite3-shm
+*.sqlite3-wal
+
+# Scratch files and logs
+.artifacts/
+scratch/
+*.log
+*.class
+*.pyc
+__pycache__/
+*.swp
+.DS_Store
+Thumbs.db
+.buildlog/
+.history/
+.svn/
+migrate_working_dir/
+
+# IDE and machine-specific configuration
+*.iml
+*.ipr
+*.iws
+.idea/
+local.properties
+
+# Symbolication and obfuscation artifacts
 app.*.symbols
-
-# Obfuscation related
 app.*.map.json
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
-# Widget Preview related
 .widget_preview/
-macos
-windows
-linux
-web
+
+# Platforms excluded by the current mobile project
+/macos/
+/windows/
+/linux/
+/web/

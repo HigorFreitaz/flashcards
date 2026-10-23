@@ -12,7 +12,10 @@ class LibraryViewModel extends ChangeNotifier {
 
   List<Deck> get decks => _deckRepository.decks;
 
-  void deleteDeck(String deckId) => _deckRepository.deleteDeck(deckId);
+  String? get loadError => _deckRepository.loadError;
+  Future<void> retry() => _deckRepository.fetchDecks();
+
+  Future<void> deleteDeck(String deckId) => _deckRepository.deleteDeck(deckId);
 
   @override
   void dispose() {

@@ -7,7 +7,6 @@ import '../../widgets/feedback/lume_bottom_sheet.dart';
 import '../../widgets/buttons/lume_button.dart';
 import '../../widgets/inputs/lume_text_field.dart';
 import '../../widgets/feedback/lume_toast.dart';
-import '../auth/auth_screen.dart';
 import '../../theme/lume_theme.dart';
 
 /// Gerenciamento da conta — nome, e-mail, senha e a exclusão da conta.
@@ -53,32 +52,51 @@ class _AccountViewState extends State<_AccountView> {
     super.dispose();
   }
 
-  void _save() {
-    final newPassword = _newPasswordController.text;
-    if (newPassword.isNotEmpty && newPassword != _confirmPasswordController.text) {
-      showLumeToast(context, 'As senhas não coincidem');
-      return;
+  bool _saving = false;
+
+  Future<void> _save() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      final newPassword = _newPasswordController.text;
+      if (newPassword.isNotEmpty &&
+          newPassword != _confirmPasswordController.text) {
+        showLumeToast(context, 'As senhas não coincidem');
+        return;
+      }
+      await context.read<AccountViewModel>().updateProfile(
+          name: _nameController.text,
+          email: _emailController.text,
+          password: newPassword);
+      if (!mounted) return;
+      _newPasswordController.clear();
+      _confirmPasswordController.clear();
+      showLumeToast(context, 'Perfil atualizado');
+      Navigator.of(context).pop();
+    } catch (error) {
+      if (mounted) showLumeToast(context, error.toString());
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
-    context.read<AccountViewModel>().updateProfile(name: _nameController.text, email: _emailController.text);
-    _newPasswordController.clear();
-    _confirmPasswordController.clear();
-    showLumeToast(context, 'Perfil atualizado');
-    Navigator.of(context).pop();
   }
 
   Future<void> _confirmDelete() async {
-    final choice = await showLumeActionSheet(
-      context,
-      title: 'Excluir conta',
-      actions: const [LumeSheetAction(label: 'Excluir minha conta permanentemente', danger: true)],
-    );
-    if (choice != 0 || !mounted) return;
-    context.read<AccountViewModel>().deleteAccount();
-    showLumeToast(context, 'Conta Deletada');
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const AuthScreen()),
-      (route) => false,
-    );
+    try {
+      final choice = await showLumeActionSheet(
+        context,
+        title: 'Excluir conta',
+        actions: const [
+          LumeSheetAction(
+              label: 'Excluir minha conta permanentemente', danger: true)
+        ],
+      );
+      if (choice != 0 || !mounted) return;
+      await context.read<AccountViewModel>().deleteAccount();
+      if (!mounted) return;
+      showLumeToast(context, 'Conta Deletada');
+    } catch (error) {
+      if (mounted) showLumeToast(context, error.toString());
+    }
   }
 
   @override
@@ -96,9 +114,18 @@ class _AccountViewState extends State<_AccountView> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: Text('Voltar', style: TextStyle(fontFamily: fontFamily, fontSize: 16, color: context.lume.primary)),
+                    child: Text('Voltar',
+                        style: TextStyle(
+                            fontFamily: fontFamily,
+                            fontSize: 16,
+                            color: context.lume.primary)),
                   ),
-                  Text('Minha conta', style: TextStyle(fontFamily: fontFamily, fontSize: 16, fontWeight: FontWeight.w600, color: context.lume.ink)),
+                  Text('Minha conta',
+                      style: TextStyle(
+                          fontFamily: fontFamily,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: context.lume.ink)),
                   const SizedBox(width: 62),
                 ],
               ),
@@ -111,28 +138,53 @@ class _AccountViewState extends State<_AccountView> {
                   children: [
                     LumeTextField(label: 'Nome', controller: _nameController),
                     const SizedBox(height: 14),
-                    LumeTextField(label: 'E-mail', controller: _emailController, keyboardType: TextInputType.emailAddress),
+                    LumeTextField(
+                        label: 'E-mail',
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress),
                     const SizedBox(height: 22),
                     const LumeFieldLabel('Alterar senha'),
-                    LumeTextField(label: 'Nova senha', controller: _newPasswordController, placeholder: 'mínimo 8 caracteres', obscureText: true),
+                    LumeTextField(
+                        label: 'Nova senha',
+                        controller: _newPasswordController,
+                        placeholder: 'mínimo 8 caracteres',
+                        obscureText: true),
                     const SizedBox(height: 14),
-                    LumeTextField(label: 'Confirmar nova senha', controller: _confirmPasswordController, obscureText: true),
+                    LumeTextField(
+                        label: 'Confirmar nova senha',
+                        controller: _confirmPasswordController,
+                        obscureText: true),
                     const SizedBox(height: 30),
-                    LumeButton(label: 'Salvar alterações', onPressed: _save),
+                    LumeButton(
+                        label: 'Salvar alterações',
+                        loading: _saving,
+                        onPressed: _save),
                     const SizedBox(height: 34),
                     Container(height: 1, color: context.lume.outline),
                     const SizedBox(height: 26),
                     Text(
                       'Zona de risco',
-                      style: TextStyle(fontFamily: fontFamily, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.9, color: context.lume.inkMuted),
+                      style: TextStyle(
+                          fontFamily: fontFamily,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.9,
+                          color: context.lume.inkMuted),
                     ),
                     const SizedBox(height: 10),
                     Text(
                       'Excluir sua conta remove seus baralhos, cartões e sua sequência de estudo. Essa ação não pode ser desfeita.',
-                      style: TextStyle(fontFamily: fontFamily, fontSize: 13, height: 1.45, color: context.lume.inkMuted),
+                      style: TextStyle(
+                          fontFamily: fontFamily,
+                          fontSize: 13,
+                          height: 1.45,
+                          color: context.lume.inkMuted),
                     ),
                     const SizedBox(height: 16),
-                    LumeButton(label: 'Excluir conta', variant: LumeButtonVariant.danger, onPressed: _confirmDelete),
+                    LumeButton(
+                        label: 'Excluir conta',
+                        variant: LumeButtonVariant.danger,
+                        onPressed: _confirmDelete),
                   ],
                 ),
               ),

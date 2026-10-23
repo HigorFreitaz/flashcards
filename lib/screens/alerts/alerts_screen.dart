@@ -1,149 +1,200 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import '../../data/repositories/notification_repository.dart';
 import '../../models/app_notification.dart';
-import '../../theme/lume_colors.dart';
 import '../../viewmodels/alerts_view_model.dart';
 import '../../widgets/buttons/lume_button.dart';
+import '../../widgets/inputs/lume_text_field.dart';
 import '../../widgets/feedback/lume_toast.dart';
 
 class AlertsScreen extends StatelessWidget {
   const AlertsScreen({super.key});
-
   @override
-  Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
+  Widget build(BuildContext context) => ChangeNotifierProvider(
       create: (ctx) => AlertsViewModel(ctx.read<NotificationRepository>()),
-      child: const _AlertsView(),
-    );
-  }
+      child: const _AlertsView());
 }
 
 class _AlertsView extends StatelessWidget {
   const _AlertsView();
+  Future<void> _action(
+      BuildContext context, Future<void> Function() action) async {
+    try {
+      await action();
+    } catch (error) {
+      if (context.mounted) showLumeToast(context, error.toString());
+    }
+  }
+
+  void _edit(BuildContext context, [AppNotification? item]) {
+    final vm = context.read<AlertsViewModel>();
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (_) => ChangeNotifierProvider.value(
+                value: vm, child: _NotificationForm(item: item))));
+  }
 
   @override
   Widget build(BuildContext context) {
-    final viewModel = context.watch<AlertsViewModel>();
-    final fontFamily = Theme.of(context).textTheme.bodyMedium?.fontFamily;
-    final today = viewModel.notifications.where((n) => n.when == 'agora' || n.when.endsWith('h')).toList();
-    final week = viewModel.notifications.where((n) => !today.contains(n)).toList();
-
+    final vm = context.watch<AlertsViewModel>();
     return Scaffold(
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-          children: [
-            Row(
-              children: [
-                LumeIconButton(icon: Icons.chevron_left_rounded, onPressed: () => Navigator.of(context).pop(), semanticLabel: 'Voltar'),
-                const SizedBox(width: 6),
-                Text('Início', style: TextStyle(fontFamily: fontFamily, fontSize: 15, fontWeight: FontWeight.w600, color: context.lume.inkMuted)),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Notificações',
-                  style: TextStyle(fontFamily: fontFamily, fontSize: 28, height: 1.15, fontWeight: FontWeight.w700, letterSpacing: -0.6, color: context.lume.ink),
-                ),
-                TextButton(
-                  onPressed: () {
-                    viewModel.markAllRead();
-                    showLumeToast(context, 'Todos os avisos marcados como lidos');
-                  },
-                  child: Text('Marcar lidos', style: TextStyle(fontFamily: fontFamily, fontSize: 14, fontWeight: FontWeight.w600, color: context.lume.primary)),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            if (today.isNotEmpty) _NotificationSection(title: 'HOJE', items: today, fontFamily: fontFamily),
-            if (week.isNotEmpty) _NotificationSection(title: 'ESTA SEMANA', items: week, fontFamily: fontFamily),
-          ],
-        ),
-      ),
-    );
+        appBar: AppBar(title: const Text('Notificações'), actions: [
+          IconButton(
+              tooltip: 'Marcar todas como lidas',
+              icon: const Icon(Icons.done_all),
+              onPressed: () => _action(context, vm.markAllRead)),
+        ]),
+        floatingActionButton: FloatingActionButton(
+            onPressed: () => _edit(context), child: const Icon(Icons.add)),
+        body: RefreshIndicator(
+            onRefresh: vm.refresh,
+            child: ListView(padding: const EdgeInsets.all(16), children: [
+              if (vm.error != null)
+                ListTile(
+                    title: Text(vm.error!),
+                    trailing: TextButton(
+                        onPressed: vm.refresh,
+                        child: const Text('Tentar novamente'))),
+              if (vm.notifications.isEmpty)
+                const Padding(
+                    padding: EdgeInsets.all(40),
+                    child: Text(
+                        'Nenhuma notificação. Adicione um lembrete ou estude para receber avisos.')),
+              ...vm.notifications.map((item) => Card(
+                      child: ListTile(
+                    leading: Icon(item.scheduled
+                        ? Icons.schedule
+                        : item.unread
+                            ? Icons.mark_email_unread_outlined
+                            : Icons.drafts_outlined),
+                    title: Text(item.title),
+                    subtitle: Text(
+                        '${item.body}\n${item.scheduled ? 'Agendada: ' : ''}${item.scheduledAt?.toLocal().toString().substring(0, 16) ?? item.when}${item.pushStatus == 'failed' ? '\nFalha ao enviar push. O aviso está disponível aqui.' : ''}'),
+                    onTap: () => _edit(context, item),
+                    trailing: PopupMenuButton<String>(
+                        onSelected: (action) async {
+                          if (action == 'edit') {
+                            _edit(context, item);
+                            return;
+                          }
+                          if (action == 'delete') {
+                            final confirmed = await showDialog<bool>(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                        title:
+                                            const Text('Excluir notificação?'),
+                                        actions: [
+                                          TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(ctx, false),
+                                              child: const Text('Voltar')),
+                                          TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(ctx, true),
+                                              child: const Text('Excluir'))
+                                        ]));
+                            if (confirmed != true || !context.mounted) return;
+                          }
+                          if (!context.mounted) return;
+                          await _action(
+                              context,
+                              () => action == 'delete'
+                                  ? vm.delete(item.id)
+                                  : action == 'retry'
+                                      ? vm.retryPush(item.id)
+                                      : vm.toggleRead(item));
+                        },
+                        itemBuilder: (_) => [
+                              const PopupMenuItem(
+                                  value: 'edit', child: Text('Editar')),
+                              if (!item.scheduled)
+                                PopupMenuItem(
+                                    value: 'read',
+                                    child: Text(item.unread
+                                        ? 'Marcar como lida'
+                                        : 'Marcar como não lida')),
+                              if (item.pushStatus == 'failed')
+                                const PopupMenuItem(
+                                    value: 'retry',
+                                    child: Text('Tentar push novamente')),
+                              const PopupMenuItem(
+                                  value: 'delete', child: Text('Excluir')),
+                            ]),
+                  ))),
+              const SizedBox(height: 80),
+            ])));
   }
 }
 
-class _NotificationSection extends StatelessWidget {
-  const _NotificationSection({required this.title, required this.items, required this.fontFamily});
-
-  final String title;
-  final List<AppNotification> items;
-  final String? fontFamily;
-
+class _NotificationForm extends StatefulWidget {
+  const _NotificationForm({this.item});
+  final AppNotification? item;
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(4, 12, 4, 10),
-          child: Text(title, style: TextStyle(fontFamily: fontFamily, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.9, color: context.lume.inkMuted)),
-        ),
-        ...items.map((n) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: _NotificationRow(notification: n, fontFamily: fontFamily),
-            )),
-      ],
-    );
-  }
+  State<_NotificationForm> createState() => _NotificationFormState();
 }
 
-class _NotificationRow extends StatelessWidget {
-  const _NotificationRow({required this.notification, required this.fontFamily});
+class _NotificationFormState extends State<_NotificationForm> {
+  late final _title = TextEditingController(text: widget.item?.title ?? '');
+  late final _body = TextEditingController(text: widget.item?.body ?? '');
+  late DateTime _date = widget.item?.scheduledAt?.toLocal() ?? DateTime.now();
+  bool _busy = false;
+  @override
+  void dispose() {
+    _title.dispose();
+    _body.dispose();
+    super.dispose();
+  }
 
-  final AppNotification notification;
-  final String? fontFamily;
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final date = await showDatePicker(
+        context: context,
+        initialDate: _date.isBefore(now) ? now : _date,
+        firstDate: DateTime(now.year, now.month, now.day),
+        lastDate: now.add(const Duration(days: 365)));
+    if (date == null || !mounted) return;
+    final time = await showTimePicker(
+        context: context, initialTime: TimeOfDay.fromDateTime(_date));
+    if (time != null && mounted) {
+      setState(() => _date =
+          DateTime(date.year, date.month, date.day, time.hour, time.minute));
+    }
+  }
+
+  Future<void> _save() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      await context.read<AlertsViewModel>().save(
+          id: widget.item?.id,
+          title: _title.text,
+          body: _body.text,
+          scheduledAt: _date);
+      if (mounted) Navigator.pop(context);
+    } catch (error) {
+      if (mounted) showLumeToast(context, error.toString());
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-      decoration: BoxDecoration(
-        color: context.lume.background,
-        border: Border.all(color: notification.unread ? context.lume.accent : context.lume.outline),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(color: context.lume.surface, borderRadius: BorderRadius.circular(13)),
-            alignment: Alignment.center,
-            child: Icon(notification.icon, size: 18, color: context.lume.primary),
-          ),
-          const SizedBox(width: 13),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(notification.title, style: TextStyle(fontFamily: fontFamily, fontSize: 15, fontWeight: FontWeight.w600, height: 1.35, color: context.lume.ink)),
-                const SizedBox(height: 3),
-                Text(notification.body, style: TextStyle(fontFamily: fontFamily, fontSize: 13, height: 1.4, color: context.lume.inkMuted)),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(notification.when, style: TextStyle(fontFamily: fontFamily, fontSize: 12, color: context.lume.inkMuted)),
-              if (notification.unread) ...[
-                const SizedBox(height: 7),
-                Container(width: 8, height: 8, decoration: BoxDecoration(color: context.lume.primary, shape: BoxShape.circle)),
-              ],
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Scaffold(
+      appBar: AppBar(
+          title: Text(
+              widget.item == null ? 'Novo lembrete' : 'Editar notificação')),
+      body: ListView(padding: const EdgeInsets.all(20), children: [
+        LumeTextField(label: 'Título', controller: _title),
+        const SizedBox(height: 16),
+        LumeTextField(label: 'Mensagem', controller: _body),
+        const SizedBox(height: 16),
+        ListTile(
+            title: const Text('Horário'),
+            subtitle: Text(_date.toString().substring(0, 16)),
+            trailing: const Icon(Icons.calendar_month),
+            onTap: _pickDate),
+        const SizedBox(height: 20),
+        LumeButton(label: 'Salvar', loading: _busy, onPressed: _save),
+      ]));
 }

@@ -23,12 +23,13 @@ enum _ResponseType { texto, duasOpcoes, quatroOpcoes }
 enum _AiState { idle, loading, done }
 
 class _AttachSource {
-  const _AttachSource(
-      {required this.id,
-      required this.icon,
-      required this.label,
-      required this.file,
-      required this.size});
+  const _AttachSource({
+    required this.id,
+    required this.icon,
+    required this.label,
+    required this.file,
+    required this.size,
+  });
 
   final String id;
   final IconData icon;
@@ -42,82 +43,42 @@ const _sources = [
       id: 'foto',
       icon: Icons.photo_camera_outlined,
       label: 'Foto',
-      file: 'caderno-aula-12.heic',
-      size: 'Imagem · 2,4 MB'),
+      file: 'foto-anexada.jpg',
+      size: 'Imagem de anexo'),
   _AttachSource(
       id: 'audio',
       icon: Icons.mic_none_rounded,
       label: 'Áudio',
-      file: 'aula-neuro.m4a',
-      size: 'Áudio · 42 min'),
+      file: 'audio-gravado.m4a',
+      size: 'Áudio de aula'),
   _AttachSource(
       id: 'video',
       icon: Icons.videocam_outlined,
       label: 'Vídeo',
-      file: 'revisao.mp4',
-      size: 'Vídeo · 8 min'),
+      file: 'video-anexo.mp4',
+      size: 'Vídeo de estudo'),
   _AttachSource(
       id: 'pdf',
       icon: Icons.picture_as_pdf_outlined,
       label: 'PDF',
-      file: 'apostila-cap3.pdf',
-      size: 'PDF · 18 páginas'),
+      file: 'documento.pdf',
+      size: 'Documento PDF'),
 ];
 
 class _GeneratedCard {
-  _GeneratedCard(
-      {required this.tag,
-      required this.front,
-      required this.back,
-      this.type = CardType.text,
-      this.audioSeconds = 8,
-      this.mediaCaption});
+  _GeneratedCard({
+    required this.tag,
+    required this.front,
+    required this.back,
+  });
 
   final String tag;
   final String front;
   final String back;
-  final CardType type;
-  final int audioSeconds;
-  final String? mediaCaption;
+  final CardType type = CardType.text;
+  final int audioSeconds = 8;
+  final String? mediaCaption = null;
 }
-
-final _fixedGenerated = [
-  _GeneratedCard(
-      tag: 'TEXTO',
-      front: 'O que é a barreira hematoencefálica?',
-      back: 'Filtro seletivo entre sangue e tecido nervoso.'),
-  _GeneratedCard(
-      tag: 'TEXTO',
-      front: 'Qual a função do cerebelo?',
-      back: 'Coordenação motora fina e equilíbrio.'),
-];
-
-final _sourceGenerated = {
-  'audio': _GeneratedCard(
-      tag: 'ÁUDIO',
-      front: 'Ouça e diga o que foi falado',
-      back: '"She takes after her mother."',
-      type: CardType.audio,
-      audioSeconds: 8),
-  'video': _GeneratedCard(
-      tag: 'TRECHO DE VÍDEO',
-      front: 'Complete a frase do trecho',
-      back: '"...o potencial de ação se propaga."',
-      type: CardType.audio,
-      audioSeconds: 14),
-  'pdf': _GeneratedCard(
-      tag: 'FIGURA DO PDF',
-      front: 'Nomeie a estrutura destacada na figura',
-      back: 'Corpo caloso',
-      type: CardType.image,
-      mediaCaption: 'apostila-cap3.pdf · pág. 12'),
-  'foto': _GeneratedCard(
-      tag: 'FOTO DO CADERNO',
-      front: 'Qual etapa está circulada no esquema?',
-      back: 'Recaptação da acetilcolina',
-      type: CardType.image,
-      mediaCaption: 'caderno-aula-12.heic · trecho 2'),
-};
 
 /// Cria um cartão novo (digitado ou gerado por IA), ou edita um existente
 /// quando [editingCardId] é informado.
@@ -130,7 +91,8 @@ class CreateCardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (ctx) => CreateCardViewModel(ctx.read<DeckRepository>(), editingCardId: editingCardId),
+      create: (ctx) => CreateCardViewModel(ctx.read<DeckRepository>(),
+          editingCardId: editingCardId, originalDeckId: deckId),
       child: _CreateCardView(deckId: deckId, editingCardId: editingCardId),
     );
   }
@@ -158,14 +120,16 @@ class _CreateCardViewState extends State<_CreateCardView> {
       List.generate(4, (_) => TextEditingController());
   int _correctIndex = 0;
 
-  final Set<String> _attachSources = {'foto', 'audio'};
+  final Set<String> _attachSources = {};
   final _focusController = TextEditingController();
   _AiState _aiState = _AiState.idle;
+  bool _saving = false;
   List<_GeneratedCard> _generated = [];
   Set<int> _picked = {};
   Timer? _generateTimer;
 
-  Flashcard? get _editingCard => context.read<CreateCardViewModel>().editingCard(widget.deckId);
+  Flashcard? get _editingCard =>
+      context.read<CreateCardViewModel>().editingCard(widget.deckId);
 
   @override
   void initState() {
@@ -185,8 +149,7 @@ class _CreateCardViewState extends State<_CreateCardView> {
         _backController.text = card.back;
       }
     } else {
-      _frontController.text =
-          'Qual neurotransmissor atua na junção neuromuscular?';
+      _frontController.text = '';
       _backController.text = '';
     }
   }
@@ -205,6 +168,13 @@ class _CreateCardViewState extends State<_CreateCardView> {
 
   Future<void> _openDeckPicker(CreateCardViewModel viewModel) async {
     final decks = viewModel.decks;
+    if (decks.isEmpty) {
+      final newId = await Navigator.of(context).push<String>(
+          MaterialPageRoute(builder: (_) => const DeckFormScreen()));
+      if (newId != null && mounted) setState(() => _targetDeckId = newId);
+      return;
+    }
+
     final choice = await showLumeActionSheet(
       context,
       title: 'Salvar em',
@@ -228,14 +198,25 @@ class _CreateCardViewState extends State<_CreateCardView> {
   void _generate() {
     setState(() => _aiState = _AiState.loading);
     _generateTimer?.cancel();
-    _generateTimer = Timer(const Duration(milliseconds: 1900), () {
+    _generateTimer = Timer(const Duration(milliseconds: 1500), () {
       if (!mounted) return;
-      final list = [
-        ..._fixedGenerated,
-        ..._attachSources
-            .map((id) => _sourceGenerated[id])
-            .whereType<_GeneratedCard>()
+
+      final focusText = _focusController.text.trim();
+      final topic = focusText.isNotEmpty ? focusText : 'Conceitos Principais';
+
+      final list = <_GeneratedCard>[
+        _GeneratedCard(
+          tag: 'CONCEITO 1',
+          front: 'Qual é o conceito principal de $topic?',
+          back: 'Definição e aplicação do conceito de $topic.',
+        ),
+        _GeneratedCard(
+          tag: 'APLICAÇÃO 2',
+          front: 'Qual é a aplicação prática de $topic?',
+          back: 'Exemplo prático de utilização de $topic.',
+        ),
       ];
+
       setState(() {
         _generated = list;
         _picked = Set.of(List.generate(list.length, (i) => i));
@@ -244,61 +225,81 @@ class _CreateCardViewState extends State<_CreateCardView> {
     });
   }
 
-  void _save(CreateCardViewModel viewModel, Deck targetDeck) {
-    if (_mode == _EntryMode.ai) {
-      final selected = _picked.toList()..sort();
-      final cards = selected.map((i) {
-        final g = _generated[i];
-        return Flashcard(
-          id: 'card-${DateTime.now().microsecondsSinceEpoch}-$i',
-          front: g.front,
-          back: g.back,
-          type: g.type,
-          audioSeconds: g.audioSeconds,
-          mediaCaption: g.mediaCaption,
-          aiGenerated: true,
-        );
-      }).toList();
-      viewModel.saveGeneratedCards(targetDeck.id, cards);
+  Future<void> _save(CreateCardViewModel viewModel, Deck? targetDeck) async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      if (targetDeck == null) {
+        showLumeToast(context, 'Crie um baralho antes de salvar.');
+        return;
+      }
+
+      if (_mode == _EntryMode.ai) {
+        final selected = _picked.toList()..sort();
+        final cards = selected.map((i) {
+          final g = _generated[i];
+          return Flashcard(
+            id: 'card-${DateTime.now().microsecondsSinceEpoch}-$i',
+            front: g.front,
+            back: g.back,
+            type: g.type,
+            audioSeconds: g.audioSeconds,
+            mediaCaption: g.mediaCaption,
+            aiGenerated: true,
+          );
+        }).toList();
+        await viewModel.saveGeneratedCards(targetDeck.id, cards);
+        if (!mounted) return;
+        Navigator.of(context).pop();
+        showLumeToast(context,
+            '${selected.length} cartões salvos em ${targetDeck.shortName}');
+        return;
+      }
+
+      final options = _responseType == _ResponseType.texto
+          ? null
+          : _altControllers
+              .take(_responseType == _ResponseType.duasOpcoes ? 2 : 4)
+              .map((c) => c.text)
+              .toList();
+      final editing = _editingCard;
+      final card = Flashcard(
+        id: editing != null && editing.id.isNotEmpty
+            ? editing.id
+            : 'card-${DateTime.now().microsecondsSinceEpoch}',
+        front: _frontController.text.trim(),
+        back: options == null
+            ? _backController.text.trim()
+            : options[_correctIndex],
+        options: options,
+        correctIndex: options == null ? null : _correctIndex,
+        status: editing?.status ?? CardStatus.novo,
+        suspended: editing?.suspended ?? false,
+        aiGenerated: editing?.aiGenerated ?? false,
+      );
+
+      final wasEditing = editing != null && editing.id.isNotEmpty;
+      await viewModel.saveTypedCard(targetDeck.id, card);
+      if (!mounted) return;
       Navigator.of(context).pop();
-      showLumeToast(context,
-          '${selected.length} cartões salvos em ${targetDeck.shortName}');
-      return;
+      showLumeToast(
+          context,
+          wasEditing
+              ? 'Cartão atualizado em ${targetDeck.shortName}'
+              : 'Cartão salvo em ${targetDeck.shortName}');
+    } catch (error) {
+      if (mounted) showLumeToast(context, error.toString());
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
-
-    final options = _responseType == _ResponseType.texto
-        ? null
-        : _altControllers
-            .take(_responseType == _ResponseType.duasOpcoes ? 2 : 4)
-            .map((c) => c.text)
-            .toList();
-    final editing = _editingCard;
-    final card = Flashcard(
-      id: editing != null && editing.id.isNotEmpty
-          ? editing.id
-          : 'card-${DateTime.now().microsecondsSinceEpoch}',
-      front: _frontController.text.trim(),
-      back: options == null
-          ? _backController.text.trim()
-          : options[_correctIndex],
-      options: options,
-      correctIndex: options == null ? null : _correctIndex,
-      status: editing?.status ?? CardStatus.novo,
-      aiGenerated: editing?.aiGenerated ?? false,
-    );
-
-    final wasEditing = editing != null && editing.id.isNotEmpty;
-    viewModel.saveTypedCard(targetDeck.id, card);
-    Navigator.of(context).pop();
-    showLumeToast(context,
-        wasEditing ? 'Cartão atualizado em ${targetDeck.shortName}' : 'Cartão salvo em ${targetDeck.shortName}');
   }
 
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<CreateCardViewModel>();
     final fontFamily = Theme.of(context).textTheme.bodyMedium?.fontFamily;
-    final targetDeck = viewModel.findDeck(_targetDeckId) ?? viewModel.decks.first;
+    final targetDeck = viewModel.findDeck(_targetDeckId) ??
+        (viewModel.decks.isNotEmpty ? viewModel.decks.first : null);
     final isEditing = widget.editingCardId != null;
     final showSaveAction =
         !(_mode == _EntryMode.ai && _aiState == _AiState.idle);
@@ -344,7 +345,7 @@ class _CreateCardViewState extends State<_CreateCardView> {
                                   color: context.lume.surface,
                                   borderRadius: BorderRadius.circular(13)),
                               alignment: Alignment.center,
-                              child: Text(targetDeck.initials,
+                              child: Text(targetDeck?.initials ?? '??',
                                   style: TextStyle(
                                       fontFamily: fontFamily,
                                       fontSize: 13,
@@ -364,7 +365,9 @@ class _CreateCardViewState extends State<_CreateCardView> {
                                           letterSpacing: 0.9,
                                           color: context.lume.inkMuted)),
                                   const SizedBox(height: 3),
-                                  Text(targetDeck.name,
+                                  Text(
+                                      targetDeck?.name ??
+                                          'Nenhum baralho selecionado',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
@@ -399,8 +402,10 @@ class _CreateCardViewState extends State<_CreateCardView> {
                         frontController: _frontController,
                         backController: _backController,
                         responseType: _responseType,
-                        onResponseTypeChanged: (t) =>
-                            setState(() => _responseType = t),
+                        onResponseTypeChanged: (t) => setState(() {
+                          _responseType = t;
+                          _correctIndex = 0;
+                        }),
                         altControllers: _altControllers,
                         correctIndex: _correctIndex,
                         onCorrectIndexChanged: (i) =>
@@ -412,8 +417,8 @@ class _CreateCardViewState extends State<_CreateCardView> {
                         aiState: _aiState,
                         generated: _generated,
                         picked: _picked,
-                        onTogglePicked: (i) => setState(
-                            () => _picked.contains(i)
+                        onTogglePicked: (i) => setState(() =>
+                            _picked.contains(i)
                                 ? _picked.remove(i)
                                 : _picked.add(i)),
                         onRegenerate: _generate,
@@ -447,10 +452,10 @@ class _CreateCardViewState extends State<_CreateCardView> {
                     Expanded(
                       child: LumeButton(
                         label: _mode == _EntryMode.ai
-                            ? 'Salvar ${_picked.length} em ${targetDeck.shortName}'
+                            ? 'Salvar ${_picked.length} em ${targetDeck?.shortName ?? 'baralho'}'
                             : (isEditing
                                 ? 'Salvar alterações'
-                                : 'Salvar em ${targetDeck.shortName}'),
+                                : 'Salvar em ${targetDeck?.shortName ?? 'baralho'}'),
                         onPressed: () => _save(viewModel, targetDeck),
                       ),
                     ),
@@ -514,7 +519,10 @@ class _TypeModeForm extends StatelessWidget {
       children: [
         const LumeFieldLabel('Frente'),
         _MultilineBox(
-            controller: frontController, minHeight: 88, fontFamily: fontFamily),
+            controller: frontController,
+            minHeight: 88,
+            fontFamily: fontFamily,
+            placeholder: 'Digite a pergunta ou frente do cartão'),
         const SizedBox(height: 20),
         const LumeFieldLabel('Tipo de resposta'),
         LumeSegmentedTabs<_ResponseType>(
@@ -774,65 +782,6 @@ class _AiModeForm extends StatelessWidget {
                           ),
                         ],
                       ),
-                      if (g.type == CardType.audio) ...[
-                        const SizedBox(height: 12),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 10),
-                          decoration: BoxDecoration(
-                              color: context.lume.surface,
-                              borderRadius: BorderRadius.circular(14)),
-                          child: Row(
-                            children: [
-                              GestureDetector(
-                                onTap: () => showLumeToast(
-                                    context, 'Tocando o trecho de áudio'),
-                                child: Container(
-                                  width: 38,
-                                  height: 38,
-                                  decoration: BoxDecoration(
-                                      color: context.lume.primary,
-                                      shape: BoxShape.circle),
-                                  child: Icon(Icons.play_arrow_rounded,
-                                      size: 14,
-                                      color: context.lume.background),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                  child: Text(
-                                      '0:${g.audioSeconds.toString().padLeft(2, '0')}',
-                                      style: TextStyle(
-                                          fontFamily: fontFamily,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: context.lume.inkMuted))),
-                            ],
-                          ),
-                        ),
-                      ],
-                      if (g.type == CardType.image) ...[
-                        const SizedBox(height: 12),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          decoration: BoxDecoration(
-                              color: context.lume.surface,
-                              borderRadius: BorderRadius.circular(14)),
-                          child: Column(
-                            children: [
-                              Icon(Icons.image_outlined,
-                                  size: 22, color: context.lume.inkMuted),
-                              const SizedBox(height: 6),
-                              Text(g.mediaCaption ?? '',
-                                  style: TextStyle(
-                                      fontFamily: fontFamily,
-                                      fontSize: 11,
-                                      color: context.lume.inkMuted)),
-                            ],
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                 ),
@@ -862,7 +811,7 @@ class _AiModeForm extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                       color: context.lume.ink)),
               const SizedBox(height: 4),
-              Text('Foto do caderno, áudio da aula, vídeo ou PDF.',
+              Text('Selecione os tipos de mídia para incluir no envio.',
                   style: TextStyle(
                       fontFamily: fontFamily,
                       fontSize: 13,
@@ -974,7 +923,7 @@ class _AiModeForm extends StatelessWidget {
             minHeight: 76,
             fontFamily: fontFamily,
             placeholder:
-                'Opcional: descreva o foco. Ex. "só os pares cranianos".'),
+                'Opcional: descreva o foco. Ex. "conceitos principais do tema".'),
       ],
     );
   }

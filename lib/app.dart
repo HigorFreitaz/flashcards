@@ -7,24 +7,58 @@ import 'data/repositories/notification_repository.dart';
 import 'data/repositories/progress_repository.dart';
 import 'data/repositories/settings_repository.dart';
 import 'data/repositories/user_repository.dart';
+import 'data/services/api_service.dart';
 import 'data/services/auth_service.dart';
+import 'data/services/session_store.dart';
 import 'screens/auth/auth_screen.dart';
+import 'screens/root/root_shell.dart';
+import 'screens/onboarding/onboarding_screen.dart';
 import 'theme/lume_theme.dart';
 
 class LumeApp extends StatelessWidget {
-  const LumeApp({super.key});
+  const LumeApp({super.key, this.apiService, this.sessionStore});
+  final SessionStore? sessionStore;
+
+  final ApiService? apiService;
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        Provider(create: (_) => AuthService()),
-        ChangeNotifierProvider(create: (ctx) => UserRepository(ctx.read<AuthService>())),
-        ChangeNotifierProvider(create: (_) => DeckRepository()),
-        ChangeNotifierProvider(create: (_) => NotificationRepository()),
-        ChangeNotifierProvider(create: (_) => ChallengeRepository()),
-        ChangeNotifierProvider(create: (_) => SettingsRepository()),
-        Provider(create: (_) => ProgressRepository()),
+        Provider<ApiService>(create: (_) => apiService ?? ApiService()),
+        Provider(
+            create: (ctx) => AuthService(ctx.read<ApiService>(),
+                sessionStore: sessionStore ??
+                    (apiService == null
+                        ? SqliteSessionStore()
+                        : MemorySessionStore()))),
+        ChangeNotifierProvider(
+            create: (ctx) =>
+                UserRepository(ctx.read<AuthService>())..restore()),
+      ],
+      child: const _AccountScope(),
+    );
+  }
+}
+
+class _AccountScope extends StatelessWidget {
+  const _AccountScope();
+  @override
+  Widget build(BuildContext context) {
+    final userId = context.watch<UserRepository>().currentUser?.id;
+    return MultiProvider(
+      key: ValueKey(userId),
+      providers: [
+        ChangeNotifierProvider(
+            create: (ctx) => DeckRepository(ctx.read<ApiService>())),
+        ChangeNotifierProvider(
+            create: (ctx) => NotificationRepository(ctx.read<ApiService>())),
+        ChangeNotifierProvider(
+            create: (ctx) => ChallengeRepository(ctx.read<ApiService>())),
+        ChangeNotifierProvider(
+            create: (ctx) => SettingsRepository(ctx.read<ApiService>())),
+        ChangeNotifierProvider(
+            create: (ctx) => ProgressRepository(ctx.read<ApiService>())),
       ],
       child: const _LumeMaterialApp(),
     );
@@ -45,7 +79,13 @@ class _LumeMaterialApp extends StatelessWidget {
       theme: buildLumeTheme(brightness: Brightness.light),
       darkTheme: buildLumeTheme(brightness: Brightness.dark),
       themeMode: themeMode,
-      home: const AuthScreen(),
+      home: context.watch<UserRepository>().restoring
+          ? const Scaffold(body: Center(child: CircularProgressIndicator()))
+          : context.watch<UserRepository>().currentUser == null
+              ? const AuthScreen()
+              : context.read<UserRepository>().newlyRegistered
+                  ? const OnboardingScreen()
+                  : const RootShell(),
     );
   }
 }

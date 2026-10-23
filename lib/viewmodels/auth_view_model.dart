@@ -7,7 +7,15 @@ class AuthViewModel extends ChangeNotifier {
 
   final UserRepository _userRepository;
 
-  bool login(String email, String password) => _userRepository.login(email, password);
+  Future<bool> login(String email, String password) =>
+      _userRepository.login(email, password);
 
-  bool signup(String name, String email, String password) => _userRepository.signup(name, email, password);
+  Future<bool> signup(String name, String email, String password) =>
+      _userRepository.signup(name, email, password);
+  String? get restoreError => _userRepository.restoreError;
+  Future<void> restore() => _userRepository.restore();
+  Future<void> requestReset(String email) =>
+      _userRepository.requestReset(email);
+  Future<void> resetPassword(String token, String password) =>
+      _userRepository.resetPassword(token, password);
 }

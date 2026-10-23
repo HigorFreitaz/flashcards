@@ -11,20 +11,21 @@ class DeckFormViewModel extends ChangeNotifier {
 
   bool get isEditing => deckId != null;
 
-  Deck? get existingDeck => deckId == null ? null : _deckRepository.findDeck(deckId!);
+  Deck? get existingDeck =>
+      deckId == null ? null : _deckRepository.findDeck(deckId!);
 
   /// Cria o baralho, ou atualiza um existente quando [deckId] foi informado.
   /// Retorna o baralho salvo.
-  Deck save({
+  Future<Deck> save({
     required String name,
     required String description,
     required int dailyGoal,
     required bool remindersEnabled,
     required List<String> reminderTimes,
-  }) {
+  }) async {
     final resolvedName = name.isEmpty ? 'Sem título' : name;
     if (deckId != null) {
-      _deckRepository.updateDeckMeta(
+      await _deckRepository.updateDeckMeta(
         deckId!,
         name: resolvedName,
         description: description,
@@ -34,7 +35,7 @@ class DeckFormViewModel extends ChangeNotifier {
       );
       return _deckRepository.findDeck(deckId!)!;
     }
-    return _deckRepository.createDeck(
+    return await _deckRepository.createDeck(
       name: resolvedName,
       description: description,
       dailyGoal: dailyGoal,

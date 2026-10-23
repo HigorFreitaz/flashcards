@@ -41,6 +41,7 @@ class _DeckFormViewState extends State<_DeckFormView> {
   bool _remindersEnabled = true;
   List<String> _reminderTimes = ['20:00'];
   bool _initialized = false;
+  bool _saving = false;
 
   void _initFromDeck(DeckFormViewModel viewModel) {
     if (_initialized) return;
@@ -75,7 +76,8 @@ class _DeckFormViewState extends State<_DeckFormView> {
       helpText: 'Adicionar horário',
     );
     if (picked == null || !mounted) return;
-    final formatted = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+    final formatted =
+        '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
     if (_reminderTimes.contains(formatted)) return;
     setState(() {
       _reminderTimes = [..._reminderTimes, formatted]..sort();
@@ -94,18 +96,31 @@ class _DeckFormViewState extends State<_DeckFormView> {
         () => _reminderTimes = _reminderTimes.where((t) => t != time).toList());
   }
 
-  void _save() {
-    final viewModel = context.read<DeckFormViewModel>();
-    final isEditing = viewModel.isEditing;
-    final deck = viewModel.save(
-      name: _nameController.text.trim(),
-      description: _descriptionController.text.trim(),
-      dailyGoal: _goal,
-      remindersEnabled: _remindersEnabled,
-      reminderTimes: _reminderTimes,
-    );
-    Navigator.of(context).pop(deck.id);
-    showLumeToast(context, isEditing ? 'Baralho atualizado' : 'Baralho "${deck.shortName}" criado');
+  Future<void> _save() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      final viewModel = context.read<DeckFormViewModel>();
+      final isEditing = viewModel.isEditing;
+      final deck = await viewModel.save(
+        name: _nameController.text.trim(),
+        description: _descriptionController.text.trim(),
+        dailyGoal: _goal,
+        remindersEnabled: _remindersEnabled,
+        reminderTimes: _reminderTimes,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop(deck.id);
+      showLumeToast(
+          context,
+          isEditing
+              ? 'Baralho atualizado'
+              : 'Baralho "${deck.shortName}" criado');
+    } catch (error) {
+      if (mounted) showLumeToast(context, error.toString());
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
@@ -340,7 +355,10 @@ class _DeckFormViewState extends State<_DeckFormView> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: LumeButton(
-                        label: viewModel.isEditing ? 'Salvar alterações' : 'Criar baralho',
+                        label: viewModel.isEditing
+                            ? 'Salvar alterações'
+                            : 'Criar baralho',
+                        loading: _saving,
                         onPressed: _save),
                   ),
                 ],

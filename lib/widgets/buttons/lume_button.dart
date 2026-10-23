@@ -7,7 +7,8 @@ import '../../theme/lume_motion.dart';
 /// Botão pílula que encolhe sutilmente ao toque — o mesmo gesto usado em
 /// todo o kit de design da Lume (escala 0,96–0,98 em 160ms).
 class _PressableScale extends StatefulWidget {
-  const _PressableScale({required this.onTap, required this.child, this.scale = 0.98});
+  const _PressableScale(
+      {required this.onTap, required this.child, this.scale = 0.98});
 
   final VoidCallback? onTap;
   final Widget child;
@@ -55,6 +56,7 @@ class LumeButton extends StatelessWidget {
     this.icon,
     this.expand = true,
     this.height = LumeTouch.primaryAction,
+    this.loading = false,
   });
 
   final String label;
@@ -63,10 +65,11 @@ class LumeButton extends StatelessWidget {
   final IconData? icon;
   final bool expand;
   final double height;
+  final bool loading;
 
   @override
   Widget build(BuildContext context) {
-    final disabled = onPressed == null;
+    final disabled = onPressed == null || loading;
     final Color background;
     final Color foreground;
     final BoxBorder? border;
@@ -90,7 +93,8 @@ class LumeButton extends StatelessWidget {
       case LumeButtonVariant.danger:
         background = context.lume.background;
         foreground = disabled ? context.lume.inkMuted : _dangerColor;
-        border = Border.all(color: disabled ? context.lume.outline : _dangerColor);
+        border =
+            Border.all(color: disabled ? context.lume.outline : _dangerColor);
     }
 
     final content = Container(
@@ -102,28 +106,39 @@ class LumeButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(LumeRadii.pill),
       ),
       alignment: Alignment.center,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: 19, color: foreground),
-            const SizedBox(width: 9),
-          ],
-          Text(
-            label,
-            style: TextStyle(
-              fontFamily: Theme.of(context).textTheme.bodyMedium?.fontFamily,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: foreground,
+      child: loading
+          ? SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: foreground,
+              ),
+            )
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (icon != null) ...[
+                  Icon(icon, size: 19, color: foreground),
+                  const SizedBox(width: 9),
+                ],
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontFamily:
+                        Theme.of(context).textTheme.bodyMedium?.fontFamily,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: foreground,
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
 
-    final button = _PressableScale(onTap: onPressed, child: content);
+    final button =
+        _PressableScale(onTap: disabled ? null : onPressed, child: content);
     return expand ? SizedBox(width: double.infinity, child: button) : button;
   }
 }

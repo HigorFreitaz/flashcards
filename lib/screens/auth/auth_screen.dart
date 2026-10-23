@@ -1,3 +1,4 @@
+import 'reset_password_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -10,8 +11,6 @@ import '../../widgets/branding/lume_logo.dart';
 import '../../widgets/navigation/lume_segmented_tabs.dart';
 import '../../widgets/inputs/lume_text_field.dart';
 import '../../widgets/feedback/lume_toast.dart';
-import '../onboarding/onboarding_screen.dart';
-import '../root/root_shell.dart';
 
 enum _AuthMode { signIn, signUp }
 
@@ -37,6 +36,7 @@ class _AuthView extends StatefulWidget {
 class _AuthViewState extends State<_AuthView> {
   _AuthMode _mode = _AuthMode.signIn;
   bool _showPassword = false;
+  bool _isLoading = false;
 
   final _nameController = TextEditingController(text: '');
   final _emailController = TextEditingController(text: '');
@@ -50,29 +50,35 @@ class _AuthViewState extends State<_AuthView> {
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     final viewModel = context.read<AuthViewModel>();
+    setState(() => _isLoading = true);
 
-    if (_mode == _AuthMode.signUp) {
-      final sucesso = viewModel.signup(_nameController.text, _emailController.text, _passwordController.text);
-      if (sucesso) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const OnboardingScreen()),
-        );
-        showLumeToast(context, 'Sucesso na criação da conta');
+    try {
+      if (_mode == _AuthMode.signUp) {
+        final sucesso = await viewModel.signup(_nameController.text,
+            _emailController.text, _passwordController.text);
+        if (!mounted) return;
+        if (sucesso) {
+          showLumeToast(context, 'Sucesso na criação da conta');
+        } else {
+          showLumeToast(
+              context, 'Criação de conta falhou. Verifique os dados.');
+        }
       } else {
-        showLumeToast(context, 'Criação de conta falhou');
+        final sucesso = await viewModel.login(
+            _emailController.text, _passwordController.text);
+        if (!mounted) return;
+        if (sucesso) {
+          showLumeToast(context, 'Sucesso no login');
+        } else {
+          showLumeToast(context, 'Login falhou. Credenciais inválidas.');
+        }
       }
-    } else {
-      final sucesso = viewModel.login(_emailController.text, _passwordController.text);
-      if (sucesso) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const RootShell()),
-        );
-        showLumeToast(context, 'Sucesso no login');
-      } else {
-        showLumeToast(context, 'Login falhou');
-      }
+    } catch (error) {
+      if (mounted) showLumeToast(context, error.toString());
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -88,6 +94,12 @@ class _AuthViewState extends State<_AuthView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (context.read<AuthViewModel>().restoreError != null)
+                ListTile(
+                    title: Text(context.read<AuthViewModel>().restoreError!),
+                    trailing: TextButton(
+                        onPressed: context.read<AuthViewModel>().restore,
+                        child: const Text('Tentar novamente'))),
               const SizedBox(height: 22),
               const LumeWordmark(markSize: 50, fontSize: 30),
               const SizedBox(height: 34),
@@ -114,7 +126,11 @@ class _AuthViewState extends State<_AuthView> {
                 isSignUp
                     ? 'Leva menos de um minuto. Você começa a estudar em seguida.'
                     : 'Seus baralhos e sua sequência sincronizam em todos os aparelhos.',
-                style: TextStyle(fontFamily: fontFamily, fontSize: 15, height: 1.5, color: context.lume.inkMuted),
+                style: TextStyle(
+                    fontFamily: fontFamily,
+                    fontSize: 15,
+                    height: 1.5,
+                    color: context.lume.inkMuted),
               ),
               const SizedBox(height: 26),
               if (isSignUp) ...[
@@ -138,8 +154,10 @@ class _AuthViewState extends State<_AuthView> {
                 placeholder: 'mínimo 8 caracteres',
                 obscureText: !_showPassword,
                 trailing: TextButton(
-                  onPressed: () => setState(() => _showPassword = !_showPassword),
-                  style: TextButton.styleFrom(minimumSize: const Size(0, LumeTouch.minimum)),
+                  onPressed: () =>
+                      setState(() => _showPassword = !_showPassword),
+                  style: TextButton.styleFrom(
+                      minimumSize: const Size(0, LumeTouch.minimum)),
                   child: Text(
                     _showPassword ? 'Ocultar' : 'Mostrar',
                     style: TextStyle(
@@ -156,8 +174,13 @@ class _AuthViewState extends State<_AuthView> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: TextButton(
-                    onPressed: () => showLumeToast(context, 'Enviamos um link de acesso para seu e-mail'),
-                    style: TextButton.styleFrom(minimumSize: const Size(0, LumeTouch.minimum)),
+                    onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (_) => ChangeNotifierProvider.value(
+                                value: context.read<AuthViewModel>(),
+                                child: const ResetPasswordScreen()))),
+                    style: TextButton.styleFrom(
+                        minimumSize: const Size(0, LumeTouch.minimum)),
                     child: Text(
                       'Esqueci minha senha',
                       style: TextStyle(
@@ -174,13 +197,18 @@ class _AuthViewState extends State<_AuthView> {
                 const SizedBox(height: 14),
                 Text(
                   'Ao criar sua conta você aceita os Termos e a Política de privacidade.',
-                  style: TextStyle(fontFamily: fontFamily, fontSize: 13, height: 1.5, color: context.lume.inkMuted),
+                  style: TextStyle(
+                      fontFamily: fontFamily,
+                      fontSize: 13,
+                      height: 1.5,
+                      color: context.lume.inkMuted),
                 ),
               ],
               const SizedBox(height: 30),
               LumeButton(
                 label: isSignUp ? 'Criar conta' : 'Entrar',
-                onPressed: _submit,
+                loading: _isLoading,
+                onPressed: _isLoading ? () {} : _submit,
               ),
               const SizedBox(height: 14),
               Text(
@@ -188,7 +216,11 @@ class _AuthViewState extends State<_AuthView> {
                     ? 'Seus dados são tratados conforme a LGPD (Lei 13.709/2018).'
                     : 'Protegemos seus dados conforme a LGPD.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontFamily: fontFamily, fontSize: 12, height: 1.5, color: context.lume.inkMuted),
+                style: TextStyle(
+                    fontFamily: fontFamily,
+                    fontSize: 12,
+                    height: 1.5,
+                    color: context.lume.inkMuted),
               ),
             ],
           ),

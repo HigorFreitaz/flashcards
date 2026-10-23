@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: lume_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-lume_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lume_password}
+      POSTGRES_DB: ${POSTGRES_DB:-lume_db}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-lume_user} -d $${POSTGRES_DB:-lume_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: lume_api
+    restart: always
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      PORT: 3000
+      EMAIL_WEBHOOK_URL: ${EMAIL_WEBHOOK_URL:-}
+      EMAIL_WEBHOOK_TOKEN: ${EMAIL_WEBHOOK_TOKEN:-}
+      PUSH_WEBHOOK_URL: ${PUSH_WEBHOOK_URL:-}
+      PUSH_WEBHOOK_TOKEN: ${PUSH_WEBHOOK_TOKEN:-}
+      DATABASE_URL: postgres://${POSTGRES_USER:-lume_user}:${POSTGRES_PASSWORD:-lume_password}@db:5432/${POSTGRES_DB:-lume_db}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../data/repositories/challenge_repository.dart';
 import '../../data/repositories/deck_repository.dart';
 import '../../data/repositories/notification_repository.dart';
 import '../../data/repositories/progress_repository.dart';
@@ -15,10 +16,14 @@ import 'widgets/progress_ring.dart';
 import 'widgets/week_streak_row.dart';
 import '../alerts/alerts_screen.dart';
 import '../deck/deck_detail_screen.dart';
+import '../deck/deck_form_screen.dart';
 import '../study/study_screen.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key, required this.onGoToChallengeTab, required this.onGoToLibraryTab});
+  const HomeScreen(
+      {super.key,
+      required this.onGoToChallengeTab,
+      required this.onGoToLibraryTab});
 
   final VoidCallback onGoToChallengeTab;
   final VoidCallback onGoToLibraryTab;
@@ -31,14 +36,18 @@ class HomeScreen extends StatelessWidget {
         ctx.read<UserRepository>(),
         ctx.read<NotificationRepository>(),
         ctx.read<ProgressRepository>(),
+        ctx.read<ChallengeRepository>(),
       ),
-      child: _HomeView(onGoToChallengeTab: onGoToChallengeTab, onGoToLibraryTab: onGoToLibraryTab),
+      child: _HomeView(
+          onGoToChallengeTab: onGoToChallengeTab,
+          onGoToLibraryTab: onGoToLibraryTab),
     );
   }
 }
 
 class _HomeView extends StatelessWidget {
-  const _HomeView({required this.onGoToChallengeTab, required this.onGoToLibraryTab});
+  const _HomeView(
+      {required this.onGoToChallengeTab, required this.onGoToLibraryTab});
 
   final VoidCallback onGoToChallengeTab;
   final VoidCallback onGoToLibraryTab;
@@ -48,11 +57,9 @@ class _HomeView extends StatelessWidget {
     final viewModel = context.watch<HomeViewModel>();
     final fontFamily = Theme.of(context).textTheme.bodyMedium?.fontFamily;
     final dueToday = viewModel.dueToday;
-    final dailyGoalTarget = viewModel.decks.isEmpty
-        ? 1
-        : viewModel.decks.fold<int>(0, (sum, d) => sum + d.dailyGoal);
-    final dailyPercent = dailyGoalTarget == 0 ? 0.0 : (1 - dueToday / dailyGoalTarget).clamp(0.0, 1.0).toDouble();
-    final recentDecks = [...viewModel.decks]..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    final dailyPercent = viewModel.dailyPercent;
+    final recentDecks = [...viewModel.decks]
+      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -70,7 +77,11 @@ class _HomeView extends StatelessWidget {
                     children: [
                       Text(
                         formatLongDatePtBr(DateTime.now()),
-                        style: TextStyle(fontFamily: fontFamily, fontSize: 13, fontWeight: FontWeight.w500, color: context.lume.inkMuted),
+                        style: TextStyle(
+                            fontFamily: fontFamily,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: context.lume.inkMuted),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -89,13 +100,15 @@ class _HomeView extends StatelessWidget {
                 ),
                 _AlertsButton(
                   unread: viewModel.unreadNotificationCount > 0,
-                  onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AlertsScreen())),
+                  onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const AlertsScreen())),
                 ),
               ],
             ),
             const SizedBox(height: 20),
             _DailyGoalCard(
               dueToday: dueToday,
+              hasCards: viewModel.decks.any((deck) => deck.cards.isNotEmpty),
               percent: dailyPercent,
               onStudy: dueToday == 0
                   ? null
@@ -111,38 +124,96 @@ class _HomeView extends StatelessWidget {
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: _StatTile(value: '${(viewModel.weeklyAccuracy * 100).round()}%', label: 'precisão na semana')),
+                Expanded(
+                    child: _StatTile(
+                        value: '${(viewModel.weeklyAccuracy * 100).round()}%',
+                        label: 'precisão na semana')),
                 const SizedBox(width: 10),
-                Expanded(child: _StatTile(value: '${viewModel.minutesStudiedToday}', suffix: ' min', label: 'estudados hoje')),
+                Expanded(
+                    child: _StatTile(
+                        value: '${viewModel.minutesStudiedToday}',
+                        suffix: ' min',
+                        label: 'estudados hoje')),
               ],
             ),
             const SizedBox(height: 12),
-            _ChallengeTeaser(onTap: onGoToChallengeTab),
+            _ChallengeTeaser(
+              onTap: onGoToChallengeTab,
+            ),
             const SizedBox(height: 14),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   'Continuar',
-                  style: TextStyle(fontFamily: fontFamily, fontSize: 19, fontWeight: FontWeight.w700, letterSpacing: -0.3, color: context.lume.ink),
+                  style: TextStyle(
+                      fontFamily: fontFamily,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.3,
+                      color: context.lume.ink),
                 ),
                 TextButton(
                   onPressed: onGoToLibraryTab,
                   child: Text(
                     'Ver tudo',
-                    style: TextStyle(fontFamily: fontFamily, fontSize: 14, fontWeight: FontWeight.w600, color: context.lume.primary),
+                    style: TextStyle(
+                        fontFamily: fontFamily,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: context.lume.primary),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 4),
-            ...recentDecks.take(3).map((deck) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _ContinueDeckCard(
-                    deck: deck,
-                    onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => DeckDetailScreen(deckId: deck.id))),
-                  ),
-                )),
+            if (recentDecks.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: context.lume.background,
+                  border: Border.all(color: context.lume.outline),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      'Nenhum baralho criado ainda',
+                      style: TextStyle(
+                          fontFamily: fontFamily,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: context.lume.ink),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Crie seu primeiro baralho para começar a praticar.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          fontFamily: fontFamily,
+                          fontSize: 13,
+                          color: context.lume.inkMuted),
+                    ),
+                    const SizedBox(height: 14),
+                    LumeButton(
+                      label: 'Criar baralho',
+                      height: 42,
+                      onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                              builder: (_) => const DeckFormScreen())),
+                    ),
+                  ],
+                ),
+              )
+            else
+              ...recentDecks.take(3).map((deck) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _ContinueDeckCard(
+                      deck: deck,
+                      onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => DeckDetailScreen(deckId: deck.id))),
+                    ),
+                  )),
           ],
         ),
       ),
@@ -171,7 +242,8 @@ class _AlertsButton extends StatelessWidget {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            Icon(Icons.notifications_none_rounded, size: 21, color: context.lume.ink),
+            Icon(Icons.notifications_none_rounded,
+                size: 21, color: context.lume.ink),
             if (unread)
               Positioned(
                 top: 9,
@@ -182,7 +254,8 @@ class _AlertsButton extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: context.lume.primary,
                     shape: BoxShape.circle,
-                    border: Border.all(color: context.lume.background, width: 2),
+                    border:
+                        Border.all(color: context.lume.background, width: 2),
                   ),
                 ),
               ),
@@ -194,9 +267,14 @@ class _AlertsButton extends StatelessWidget {
 }
 
 class _DailyGoalCard extends StatelessWidget {
-  const _DailyGoalCard({required this.dueToday, required this.percent, required this.onStudy});
+  const _DailyGoalCard(
+      {required this.dueToday,
+      required this.hasCards,
+      required this.percent,
+      required this.onStudy});
 
   final int dueToday;
+  final bool hasCards;
   final double percent;
   final VoidCallback? onStudy;
 
@@ -205,7 +283,9 @@ class _DailyGoalCard extends StatelessWidget {
     final fontFamily = Theme.of(context).textTheme.bodyMedium?.fontFamily;
     return Container(
       padding: const EdgeInsets.all(LumeSpacing.cardPadding),
-      decoration: BoxDecoration(color: context.lume.primary, borderRadius: BorderRadius.circular(LumeRadii.card)),
+      decoration: BoxDecoration(
+          color: context.lume.primary,
+          borderRadius: BorderRadius.circular(LumeRadii.card)),
       child: Column(
         children: [
           Row(
@@ -217,7 +297,11 @@ class _DailyGoalCard extends StatelessWidget {
                 progressColor: context.lume.background,
                 child: Text(
                   '${(percent * 100).round()}%',
-                  style: TextStyle(fontFamily: fontFamily, fontSize: 17, fontWeight: FontWeight.w700, color: context.lume.background),
+                  style: TextStyle(
+                      fontFamily: fontFamily,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: context.lume.background),
                 ),
               ),
               const SizedBox(width: 18),
@@ -226,13 +310,33 @@ class _DailyGoalCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('Meta de hoje',
-                        style: TextStyle(fontFamily: fontFamily, fontSize: 15, fontWeight: FontWeight.w500, color: context.lume.background.withValues(alpha: 0.8))),
+                        style: TextStyle(
+                            fontFamily: fontFamily,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: context.lume.background
+                                .withValues(alpha: 0.8))),
                     const SizedBox(height: 5),
                     Text('$dueToday cartões',
-                        style: TextStyle(fontFamily: fontFamily, fontSize: 26, fontWeight: FontWeight.w700, letterSpacing: -0.5, height: 1.1, color: context.lume.background)),
+                        style: TextStyle(
+                            fontFamily: fontFamily,
+                            fontSize: 26,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.5,
+                            height: 1.1,
+                            color: context.lume.background)),
                     const SizedBox(height: 5),
-                    Text('prontos para revisar',
-                        style: TextStyle(fontFamily: fontFamily, fontSize: 14, color: context.lume.background.withValues(alpha: 0.8))),
+                    Text(
+                        !hasCards
+                            ? 'adicione cartões para começar'
+                            : dueToday == 0
+                                ? 'nenhuma revisão pendente'
+                                : 'prontos para revisar',
+                        style: TextStyle(
+                            fontFamily: fontFamily,
+                            fontSize: 14,
+                            color: context.lume.background
+                                .withValues(alpha: 0.8))),
                   ],
                 ),
               ),
@@ -240,7 +344,11 @@ class _DailyGoalCard extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           LumeButton(
-            label: dueToday == 0 ? 'Tudo revisado' : 'Revisar agora',
+            label: !hasCards
+                ? 'Nenhum cartão para revisar'
+                : dueToday == 0
+                    ? 'Sem revisões pendentes'
+                    : 'Revisar agora',
             onPressed: onStudy,
             height: 50,
           ),
@@ -258,7 +366,10 @@ class _StreakCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fontFamily = Theme.of(context).textTheme.bodyMedium?.fontFamily;
-    final xpProgress = viewModel.totalXp / (viewModel.totalXp + viewModel.xpToNextLevel);
+    final totalProgress = (viewModel.totalXp + viewModel.xpToNextLevel);
+    final xpProgress = totalProgress == 0
+        ? 0.0
+        : (viewModel.totalXp / totalProgress).clamp(0.0, 1.0);
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -271,25 +382,54 @@ class _StreakCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Sequência de ${viewModel.streakDays} dias',
-                  style: TextStyle(fontFamily: fontFamily, fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: context.lume.ink)),
+              Text(
+                  viewModel.streakDays == 0
+                      ? 'Sem sequência ainda'
+                      : 'Sequência de ${viewModel.streakDays} ${viewModel.streakDays == 1 ? 'dia' : 'dias'}',
+                  style: TextStyle(
+                      fontFamily: fontFamily,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.2,
+                      color: context.lume.ink)),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                decoration: BoxDecoration(color: context.lume.surface, borderRadius: BorderRadius.circular(10)),
+                decoration: BoxDecoration(
+                    color: context.lume.surface,
+                    borderRadius: BorderRadius.circular(10)),
                 child: Text('Nível ${viewModel.level}',
-                    style: TextStyle(fontFamily: fontFamily, fontSize: 12, fontWeight: FontWeight.w700, color: context.lume.primary)),
+                    style: TextStyle(
+                        fontFamily: fontFamily,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: context.lume.primary)),
               ),
             ],
           ),
           const SizedBox(height: 18),
-          WeekStreakRow(progress: viewModel.weekProgress, today: 1),
+          if (viewModel.streakDays == 0) ...[
+            const Text('Estude cartões para iniciar sua sequência.'),
+            const SizedBox(height: 12),
+          ],
+          WeekStreakRow(
+              progress: viewModel.weekProgress,
+              today: (DateTime.now().weekday - 1) % 7),
           const SizedBox(height: 18),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('${viewModel.totalXp} XP', style: TextStyle(fontFamily: fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: context.lume.inkMuted)),
-              Text('faltam ${viewModel.xpToNextLevel} para o nível ${viewModel.level + 1}',
-                  style: TextStyle(fontFamily: fontFamily, fontSize: 13, color: context.lume.inkMuted)),
+              Text('${viewModel.totalXp} XP',
+                  style: TextStyle(
+                      fontFamily: fontFamily,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: context.lume.inkMuted)),
+              Text(
+                  'faltam ${viewModel.xpToNextLevel} para o nível ${viewModel.level + 1}',
+                  style: TextStyle(
+                      fontFamily: fontFamily,
+                      fontSize: 13,
+                      color: context.lume.inkMuted)),
             ],
           ),
           const SizedBox(height: 8),
@@ -334,15 +474,28 @@ class _StatTile extends StatelessWidget {
         children: [
           RichText(
             text: TextSpan(
-              style: TextStyle(fontFamily: fontFamily, fontSize: 21, fontWeight: FontWeight.w700, letterSpacing: -0.3, color: context.lume.ink),
+              style: TextStyle(
+                  fontFamily: fontFamily,
+                  fontSize: 21,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.3,
+                  color: context.lume.ink),
               children: [
                 TextSpan(text: value),
-                if (suffix != null) TextSpan(text: suffix, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                if (suffix != null)
+                  TextSpan(
+                      text: suffix,
+                      style: const TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w500)),
               ],
             ),
           ),
           const SizedBox(height: 3),
-          Text(label, style: TextStyle(fontFamily: fontFamily, fontSize: 12, color: context.lume.inkMuted)),
+          Text(label,
+              style: TextStyle(
+                  fontFamily: fontFamily,
+                  fontSize: 12,
+                  color: context.lume.inkMuted)),
         ],
       ),
     );
@@ -361,20 +514,36 @@ class _ChallengeTeaser extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-        decoration: BoxDecoration(color: context.lume.surface, borderRadius: BorderRadius.circular(20)),
+        decoration: BoxDecoration(
+            color: context.lume.surface,
+            borderRadius: BorderRadius.circular(20)),
         child: Row(
           children: [
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('DESAFIO DA SEMANA',
-                      style: TextStyle(fontFamily: fontFamily, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1, color: context.lume.primary)),
+                  Text('DESAFIOS',
+                      style: TextStyle(
+                          fontFamily: fontFamily,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1,
+                          color: context.lume.primary)),
                   const SizedBox(height: 6),
-                  Text('11 de 15 perguntas respondidas',
-                      style: TextStyle(fontFamily: fontFamily, fontSize: 15, fontWeight: FontWeight.w600, height: 1.35, color: context.lume.ink)),
+                  Text('Crie um desafio com seus cartões',
+                      style: TextStyle(
+                          fontFamily: fontFamily,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          height: 1.35,
+                          color: context.lume.ink)),
                   const SizedBox(height: 4),
-                  Text('Termina em 2 dias · +250 XP', style: TextStyle(fontFamily: fontFamily, fontSize: 13, color: context.lume.inkMuted)),
+                  Text('Desafios manuais disponíveis · IA em protótipo',
+                      style: TextStyle(
+                          fontFamily: fontFamily,
+                          fontSize: 13,
+                          color: context.lume.inkMuted)),
                 ],
               ),
             ),
@@ -417,17 +586,29 @@ class _ContinueDeckCard extends StatelessWidget {
                       Text(deck.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontFamily: fontFamily, fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: -0.2, color: context.lume.ink)),
+                          style: TextStyle(
+                              fontFamily: fontFamily,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.2,
+                              color: context.lume.ink)),
                       const SizedBox(height: 4),
                       Text('${deck.totalCount} cartões',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontFamily: fontFamily, fontSize: 13, color: context.lume.inkMuted)),
+                          style: TextStyle(
+                              fontFamily: fontFamily,
+                              fontSize: 13,
+                              color: context.lume.inkMuted)),
                     ],
                   ),
                 ),
                 Text('${(percent * 100).round()}%',
-                    style: TextStyle(fontFamily: fontFamily, fontSize: 13, fontWeight: FontWeight.w700, color: context.lume.primary)),
+                    style: TextStyle(
+                        fontFamily: fontFamily,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: context.lume.primary)),
               ],
             ),
             const SizedBox(height: 12),

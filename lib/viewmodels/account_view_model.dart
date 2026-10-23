@@ -10,7 +10,9 @@ class AccountViewModel extends ChangeNotifier {
 
   AppUser get currentUser => _userRepository.currentUser!;
 
-  void updateProfile({String? name, String? email}) => _userRepository.updateProfile(name: name, email: email);
+  Future<void> updateProfile({String? name, String? email, String? password}) =>
+      _userRepository.updateProfile(
+          name: name, email: email, password: password);
 
-  void deleteAccount() => _userRepository.deleteAccount();
+  Future<void> deleteAccount() => _userRepository.deleteAccount();
 }

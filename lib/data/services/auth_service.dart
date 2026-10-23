@@ -1,17 +1,67 @@
+import 'api_service.dart';
+import 'session_store.dart';
 import '../../models/app_user.dart';
 
-/// Simula um serviço de autenticação externo. Sem I/O real: reconhece um
-/// único usuário de teste, só para o fluxo de login/cadastro funcionar.
 class AuthService {
-  AppUser? login(AppUser credentials) {
-    if (credentials.email == 'thomas.vaz@gmail.com' && credentials.password == 'thomas34') {
-      return AppUser(name: 'Thomas Jefersson Vaz', email: 'thomas.vaz@gmail.com', password: 'thomas34');
-    }
-    return null;
+  AuthService(this._api, {SessionStore? sessionStore})
+      : _store = sessionStore ?? MemorySessionStore();
+  final ApiService _api;
+  final SessionStore _store;
+  Future<AppUser?> _authenticate(
+      String path, Map<String, dynamic> payload) async {
+    final response = await _api.post(path, payload);
+    final token = response['token'] as String;
+    await _store.save(token);
+    _api.authToken = token;
+    return AppUser.fromJson(response['user'] as Map<String, dynamic>);
   }
 
-  AppUser? signup(AppUser user) {
-    if (user.email == 'thomas.vaz@gmail.com') return null;
-    return AppUser(name: user.name, email: user.email, password: user.password);
+  Future<AppUser?> login(AppUser user) => _authenticate(
+      '/auth/login', {'email': user.email, 'password': user.password});
+  Future<AppUser?> signup(AppUser user) => _authenticate('/auth/signup',
+      {'name': user.name, 'email': user.email, 'password': user.password});
+  Future<AppUser?> restore() async {
+    _api.authToken = await _store.read();
+    if (_api.authToken == null) return null;
+    try {
+      final response = await _api.get('/auth/me');
+      return AppUser.fromJson(response['user'] as Map<String, dynamic>);
+    } on ApiException catch (error) {
+      if (error.statusCode != 401) rethrow;
+      _api.authToken = null;
+      await _store.clear();
+      return null;
+    }
+  }
+
+  Future<AppUser?> updateProfile(String id,
+      {String? name, String? email, String? password}) async {
+    final response = await _api.put('/auth/profile', {
+      if (name != null) 'name': name,
+      if (email != null) 'email': email,
+      if (password != null && password.isNotEmpty) 'password': password,
+    });
+    return AppUser.fromJson(response['user'] as Map<String, dynamic>);
+  }
+
+  Future<void> requestReset(String email) async {
+    await _api.post('/auth/forgot-password', {'email': email});
+  }
+
+  Future<void> resetPassword(String token, String password) async {
+    await _api
+        .post('/auth/reset-password', {'token': token, 'password': password});
+  }
+
+  Future<void> deleteAccount() async {
+    await _api.delete('/auth/account');
+  }
+
+  Future<void> logout() async {
+    // Clear persistence before allowing the UI to report a successful logout.
+    await _store.clear();
+    final request = _api.post('/auth/logout', {});
+    _api.authToken = null;
+    await request.catchError((_) => null);
   }
 }

@@ -5,12 +5,14 @@ import '../models/deck.dart';
 import '../models/flashcard.dart';
 
 class CreateCardViewModel extends ChangeNotifier {
-  CreateCardViewModel(this._deckRepository, {required this.editingCardId}) {
+  CreateCardViewModel(this._deckRepository,
+      {required this.editingCardId, required this.originalDeckId}) {
     _deckRepository.addListener(notifyListeners);
   }
 
   final DeckRepository _deckRepository;
   final String? editingCardId;
+  final String originalDeckId;
 
   List<Deck> get decks => _deckRepository.decks;
 
@@ -18,23 +20,22 @@ class CreateCardViewModel extends ChangeNotifier {
 
   Flashcard? editingCard(String deckId) {
     if (editingCardId == null) return null;
-    return findDeck(deckId)?.cards.firstWhere(
-        (c) => c.id == editingCardId,
+    return findDeck(deckId)?.cards.firstWhere((c) => c.id == editingCardId,
         orElse: () => Flashcard(id: '', front: '', back: ''));
   }
 
-  void saveTypedCard(String targetDeckId, Flashcard card) {
+  Future<void> saveTypedCard(String targetDeckId, Flashcard card) async {
     if (editingCardId != null && editingCardId!.isNotEmpty) {
-      _deckRepository.updateCard(targetDeckId, card);
+      await _deckRepository.updateCard(originalDeckId, card,
+          targetDeckId: targetDeckId);
     } else {
-      _deckRepository.addCard(targetDeckId, card);
+      await _deckRepository.addCard(targetDeckId, card);
     }
   }
 
-  void saveGeneratedCards(String targetDeckId, List<Flashcard> cards) {
-    for (final card in cards) {
-      _deckRepository.addCard(targetDeckId, card);
-    }
+  Future<void> saveGeneratedCards(
+      String targetDeckId, List<Flashcard> cards) async {
+    await _deckRepository.addGeneratedCards(targetDeckId, cards);
   }
 
   @override

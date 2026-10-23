@@ -15,8 +15,68 @@ class Flashcard {
     this.audioSeconds = 8,
     this.aiGenerated = false,
     this.mediaCaption,
+    this.suspended = false,
   });
 
+  factory Flashcard.fromJson(Map<String, dynamic> json) {
+    CardType parseType(String? val) {
+      switch (val) {
+        case 'audio':
+          return CardType.audio;
+        case 'image':
+          return CardType.image;
+        default:
+          return CardType.text;
+      }
+    }
+
+    CardStatus parseStatus(String? val) {
+      switch (val) {
+        case 'aRevisar':
+          return CardStatus.aRevisar;
+        case 'dominado':
+          return CardStatus.dominado;
+        default:
+          return CardStatus.novo;
+      }
+    }
+
+    return Flashcard(
+      suspended: json['suspended'] as bool? ?? false,
+      id: json['id'] as String? ?? '',
+      front: json['front'] as String? ?? '',
+      back: json['back'] as String? ?? '',
+      type: parseType(json['type'] as String?),
+      status: parseStatus(json['status'] as String?),
+      hint: json['hint'] as String?,
+      options: (json['options'] as List<dynamic>?)
+          ?.map((e) => e.toString())
+          .toList(),
+      correctIndex: json['correctIndex'] as int?,
+      audioSeconds: json['audioSeconds'] as int? ?? 8,
+      aiGenerated: json['aiGenerated'] as bool? ?? false,
+      mediaCaption: json['mediaCaption'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'suspended': suspended,
+      'id': id,
+      'front': front,
+      'back': back,
+      'type': type.name,
+      'status': status.name,
+      'hint': hint,
+      'options': options,
+      'correctIndex': correctIndex,
+      'audioSeconds': audioSeconds,
+      'aiGenerated': aiGenerated,
+      'mediaCaption': mediaCaption,
+    };
+  }
+
+  bool suspended;
   final String id;
   String front;
   String back;

@@ -5,7 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/repositories/deck_repository.dart';
-import '../../models/deck.dart';
+import '../../data/repositories/progress_repository.dart';
+import '../../data/repositories/challenge_repository.dart';
+import '../../data/repositories/notification_repository.dart';
+import '../../widgets/feedback/lume_toast.dart';
+import '../../models/study_queue_item.dart';
+export '../../models/study_queue_item.dart';
 import '../../models/flashcard.dart';
 import '../../theme/lume_colors.dart';
 import '../../theme/lume_metrics.dart';
@@ -13,28 +18,29 @@ import '../../theme/lume_motion.dart';
 import '../../viewmodels/study_view_model.dart';
 import '../../widgets/buttons/lume_button.dart';
 
-/// Um cartão amarrado ao baralho de origem — para que a resposta seja
-/// registrada no lugar certo mesmo numa sessão que mistura vários baralhos.
-class StudyQueueItem {
-  const StudyQueueItem({required this.deckId, required this.deckName, required this.card});
-
-  final String deckId;
-  final String deckName;
-  final Flashcard card;
-
-  static List<StudyQueueItem> fromDecks(Iterable<Deck> decks) {
-    return decks
-        .expand((deck) => deck.studyQueue.map((card) => StudyQueueItem(deckId: deck.id, deckName: deck.name, card: card)))
-        .toList();
-  }
-
-  static List<StudyQueueItem> fromDeck(Deck deck) {
-    return deck.studyQueue.map((card) => StudyQueueItem(deckId: deck.id, deckName: deck.name, card: card)).toList();
-  }
-}
-
 const _wave = <double>[
-  10, 18, 26, 14, 30, 22, 12, 26, 34, 20, 14, 24, 30, 16, 10, 22, 28, 18, 12, 26, 20, 14,
+  10,
+  18,
+  26,
+  14,
+  30,
+  22,
+  12,
+  26,
+  34,
+  20,
+  14,
+  24,
+  30,
+  16,
+  10,
+  22,
+  28,
+  18,
+  12,
+  26,
+  20,
+  14,
 ];
 
 class StudyScreen extends StatelessWidget {
@@ -43,17 +49,27 @@ class StudyScreen extends StatelessWidget {
     required this.queue,
     required this.sessionTitle,
     this.isChallenge = false,
+    this.challengeId,
   });
 
   final List<StudyQueueItem> queue;
   final String sessionTitle;
   final bool isChallenge;
+  final String? challengeId;
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (ctx) => StudyViewModel(ctx.read<DeckRepository>()),
-      child: _StudyView(queue: queue, sessionTitle: sessionTitle, isChallenge: isChallenge),
+      create: (ctx) => StudyViewModel(
+          ctx.read<DeckRepository>(),
+          ctx.read<ProgressRepository>(),
+          ctx.read<ChallengeRepository>(),
+          ctx.read<NotificationRepository?>()),
+      child: _StudyView(
+          queue: queue,
+          sessionTitle: sessionTitle,
+          isChallenge: isChallenge,
+          challengeId: challengeId),
     );
   }
 }
@@ -63,18 +79,40 @@ class _StudyView extends StatefulWidget {
     required this.queue,
     required this.sessionTitle,
     required this.isChallenge,
+    this.challengeId,
   });
 
   final List<StudyQueueItem> queue;
   final String sessionTitle;
   final bool isChallenge;
+  final String? challengeId;
 
   @override
   State<_StudyView> createState() => _StudyViewState();
 }
 
-class _StudyViewState extends State<_StudyView> {
+class _StudyViewState extends State<_StudyView> with WidgetsBindingObserver {
+  bool _foreground = true;
+  final _studyTime = Stopwatch();
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _studyTime.start();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _foreground = state == AppLifecycleState.resumed;
+    if (_foreground && !_saving && !_done && _chosen == null) {
+      _studyTime.start();
+    } else {
+      _studyTime.stop();
+    }
+  }
+
   int _index = 0;
+  bool _saving = false;
   bool _flipped = false;
   int? _chosen;
   bool _playing = false;
@@ -83,11 +121,14 @@ class _StudyViewState extends State<_StudyView> {
 
   bool get _done => _index >= widget.queue.length;
 
-  StudyQueueItem get _current => widget.queue[math.min(_index, widget.queue.length - 1)];
+  StudyQueueItem get _current =>
+      widget.queue[math.min(_index, widget.queue.length - 1)];
 
   @override
   void dispose() {
     _audioTimer?.cancel();
+    _studyTime.stop();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
@@ -120,27 +161,64 @@ class _StudyViewState extends State<_StudyView> {
     setState(() => _flipped = !_flipped);
   }
 
-  void _pickChoice(int i) {
-    if (_chosen != null) return;
-    setState(() => _chosen = i);
-    final card = _current.card;
-    final correct = i == card.correctIndex;
-    context.read<StudyViewModel>().markCardReviewed(_current.deckId, card.id, correct: correct);
+  Future<void> _pickChoice(int i) async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    _studyTime.stop();
+    try {
+      if (_chosen != null) return;
+
+      final card = _current.card;
+      final correct = i == card.correctIndex;
+      await context.read<StudyViewModel>().markCardReviewed(
+          _current.deckId, card.id,
+          correct: correct,
+          durationSeconds: _studyTime.elapsed.inSeconds.clamp(0, 3600),
+          challengeId: widget.challengeId);
+      if (!mounted) return;
+      setState(() => _chosen = i);
+    } catch (error) {
+      if (mounted) showLumeToast(context, error.toString());
+    } finally {
+      if (mounted) {
+        setState(() => _saving = false);
+        if (_foreground && !_done && _chosen == null) _studyTime.start();
+      }
+    }
   }
 
-  void _next() {
-    _audioTimer?.cancel();
-    final card = _current.card;
-    if (!card.hasOptions) {
-      context.read<StudyViewModel>().markCardReviewed(_current.deckId, card.id);
+  Future<void> _next({bool? correct}) async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    _studyTime.stop();
+    try {
+      if (_done || (_current.card.hasOptions && _chosen == null)) return;
+      _audioTimer?.cancel();
+      final card = _current.card;
+      if (!card.hasOptions) {
+        await context.read<StudyViewModel>().markCardReviewed(
+            _current.deckId, card.id,
+            correct: correct,
+            durationSeconds: _studyTime.elapsed.inSeconds.clamp(0, 3600),
+            challengeId: widget.challengeId);
+        if (!mounted) return;
+      }
+      setState(() {
+        _index += 1;
+        _studyTime.reset();
+        _flipped = false;
+        _chosen = null;
+        _playing = false;
+        _elapsedSeconds = 0;
+      });
+    } catch (error) {
+      if (mounted) showLumeToast(context, error.toString());
+    } finally {
+      if (mounted) {
+        setState(() => _saving = false);
+        if (_foreground && !_done && _chosen == null) _studyTime.start();
+      }
     }
-    setState(() {
-      _index += 1;
-      _flipped = false;
-      _chosen = null;
-      _playing = false;
-      _elapsedSeconds = 0;
-    });
   }
 
   @override
@@ -182,13 +260,20 @@ class _StudyViewState extends State<_StudyView> {
                   const SizedBox(width: 12),
                   Text(
                     '${math.min(_index + 1, total)}/$total',
-                    style: TextStyle(fontFamily: fontFamily, fontSize: 13, fontWeight: FontWeight.w600, color: context.lume.inkMuted),
+                    style: TextStyle(
+                        fontFamily: fontFamily,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: context.lume.inkMuted),
                   ),
                 ],
               ),
               Expanded(
                 child: _done
-                    ? _CompletionView(sessionTitle: widget.sessionTitle, isChallenge: widget.isChallenge, total: total)
+                    ? _CompletionView(
+                        sessionTitle: widget.sessionTitle,
+                        isChallenge: widget.isChallenge,
+                        total: total)
                     : _ActiveCard(
                         card: _current.card,
                         fontFamily: fontFamily,
@@ -200,7 +285,8 @@ class _StudyViewState extends State<_StudyView> {
                         chosen: _chosen,
                         onChoicePicked: _pickChoice,
                         nextLabel: _nextLabel,
-                        onNext: _next,
+                        onNext: () => _next(),
+                        onRate: (correct) => _next(correct: correct),
                       ),
               ),
             ],
@@ -210,7 +296,8 @@ class _StudyViewState extends State<_StudyView> {
     );
   }
 
-  String get _nextLabel => _index + 1 >= widget.queue.length ? 'Ver resultado' : 'Próximo cartão';
+  String get _nextLabel =>
+      _index + 1 >= widget.queue.length ? 'Ver resultado' : 'Próximo cartão';
 }
 
 class _ActiveCard extends StatelessWidget {
@@ -226,6 +313,7 @@ class _ActiveCard extends StatelessWidget {
     required this.onChoicePicked,
     required this.nextLabel,
     required this.onNext,
+    required this.onRate,
   });
 
   final Flashcard card;
@@ -239,6 +327,7 @@ class _ActiveCard extends StatelessWidget {
   final ValueChanged<int> onChoicePicked;
   final String nextLabel;
   final VoidCallback onNext;
+  final ValueChanged<bool> onRate;
 
   @override
   Widget build(BuildContext context) {
@@ -263,11 +352,17 @@ class _ActiveCard extends StatelessWidget {
                       ..setEntry(3, 2, 0.001)
                       ..rotateY(angle),
                     child: showFront
-                        ? _CardFace(card: card, fontFamily: fontFamily, elapsed: elapsedSeconds, playing: playing, onPlay: onToggleAudio)
+                        ? _CardFace(
+                            card: card,
+                            fontFamily: fontFamily,
+                            elapsed: elapsedSeconds,
+                            playing: playing,
+                            onPlay: onToggleAudio)
                         : Transform(
                             alignment: Alignment.center,
                             transform: Matrix4.identity()..rotateY(math.pi),
-                            child: _CardBack(card: card, fontFamily: fontFamily),
+                            child:
+                                _CardBack(card: card, fontFamily: fontFamily),
                           ),
                   );
                 },
@@ -284,6 +379,7 @@ class _ActiveCard extends StatelessWidget {
           onFlip: onFlip,
           nextLabel: nextLabel,
           onNext: onNext,
+          onRate: onRate,
         ),
       ],
     );
@@ -320,13 +416,26 @@ class _CardFace extends StatelessWidget {
           Row(
             children: [
               Text(card.kindLabel,
-                  style: TextStyle(fontFamily: fontFamily, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.1, color: context.lume.inkMuted)),
+                  style: TextStyle(
+                      fontFamily: fontFamily,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.1,
+                      color: context.lume.inkMuted)),
               if (card.aiGenerated) ...[
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
-                  decoration: BoxDecoration(color: context.lume.surface, borderRadius: BorderRadius.circular(5)),
-                  child: Text('IA', style: TextStyle(fontFamily: fontFamily, fontSize: 9, fontWeight: FontWeight.w700, color: context.lume.primary)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+                  decoration: BoxDecoration(
+                      color: context.lume.surface,
+                      borderRadius: BorderRadius.circular(5)),
+                  child: Text('IA',
+                      style: TextStyle(
+                          fontFamily: fontFamily,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: context.lume.primary)),
                 ),
               ],
             ],
@@ -339,15 +448,27 @@ class _CardFace extends StatelessWidget {
                   Text(
                     card.front,
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontFamily: fontFamily, fontSize: 20, height: 1.3, fontWeight: FontWeight.w600, letterSpacing: -0.3, color: context.lume.ink),
+                    style: TextStyle(
+                        fontFamily: fontFamily,
+                        fontSize: 20,
+                        height: 1.3,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.3,
+                        color: context.lume.ink),
                   ),
                   if (card.type == CardType.audio) ...[
                     const SizedBox(height: 14),
-                    _AudioPlayer(card: card, elapsed: elapsed, playing: playing, onPlay: onPlay, fontFamily: fontFamily),
+                    _AudioPlayer(
+                        card: card,
+                        elapsed: elapsed,
+                        playing: playing,
+                        onPlay: onPlay,
+                        fontFamily: fontFamily),
                   ],
                   if (card.type == CardType.image) ...[
                     const SizedBox(height: 14),
-                    _ImagePlaceholder(caption: card.mediaCaption, fontFamily: fontFamily),
+                    _ImagePlaceholder(
+                        caption: card.mediaCaption, fontFamily: fontFamily),
                   ],
                 ],
               ),
@@ -356,8 +477,13 @@ class _CardFace extends StatelessWidget {
           Text(
             card.type == CardType.audio
                 ? 'Ouça quantas vezes quiser'
-                : (card.hasOptions ? 'Escolha a alternativa correta' : 'Toque no cartão para revelar'),
-            style: TextStyle(fontFamily: fontFamily, fontSize: 12, color: context.lume.inkMuted),
+                : (card.hasOptions
+                    ? 'Escolha a alternativa correta'
+                    : 'Toque no cartão para revelar'),
+            style: TextStyle(
+                fontFamily: fontFamily,
+                fontSize: 12,
+                color: context.lume.inkMuted),
           ),
         ],
       ),
@@ -376,19 +502,37 @@ class _CardBack extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(color: context.lume.primary, borderRadius: BorderRadius.circular(LumeRadii.card)),
+      decoration: BoxDecoration(
+          color: context.lume.primary,
+          borderRadius: BorderRadius.circular(LumeRadii.card)),
       alignment: Alignment.center,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('RESPOSTA', style: TextStyle(fontFamily: fontFamily, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.1, color: context.lume.background.withValues(alpha: 0.75))),
+          Text('RESPOSTA',
+              style: TextStyle(
+                  fontFamily: fontFamily,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.1,
+                  color: context.lume.background.withValues(alpha: 0.75))),
           const SizedBox(height: 14),
           Text(card.back,
               textAlign: TextAlign.center,
-              style: TextStyle(fontFamily: fontFamily, fontSize: 20, height: 1.35, fontWeight: FontWeight.w600, letterSpacing: -0.2, color: context.lume.background)),
+              style: TextStyle(
+                  fontFamily: fontFamily,
+                  fontSize: 20,
+                  height: 1.35,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.2,
+                  color: context.lume.background)),
           if (card.hint != null) ...[
             const SizedBox(height: 16),
-            Text(card.hint!, style: TextStyle(fontFamily: fontFamily, fontSize: 12, color: context.lume.background.withValues(alpha: 0.75))),
+            Text(card.hint!,
+                style: TextStyle(
+                    fontFamily: fontFamily,
+                    fontSize: 12,
+                    color: context.lume.background.withValues(alpha: 0.75))),
           ],
         ],
       ),
@@ -397,7 +541,12 @@ class _CardBack extends StatelessWidget {
 }
 
 class _AudioPlayer extends StatelessWidget {
-  const _AudioPlayer({required this.card, required this.elapsed, required this.playing, required this.onPlay, required this.fontFamily});
+  const _AudioPlayer(
+      {required this.card,
+      required this.elapsed,
+      required this.playing,
+      required this.onPlay,
+      required this.fontFamily});
 
   final Flashcard card;
   final double elapsed;
@@ -412,7 +561,8 @@ class _AudioPlayer extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-      decoration: BoxDecoration(color: context.lume.surface, borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+          color: context.lume.surface, borderRadius: BorderRadius.circular(16)),
       child: Row(
         children: [
           GestureDetector(
@@ -420,8 +570,12 @@ class _AudioPlayer extends StatelessWidget {
             child: Container(
               width: 46,
               height: 46,
-              decoration: BoxDecoration(color: context.lume.primary, shape: BoxShape.circle),
-              child: Icon(playing ? Icons.pause_rounded : Icons.play_arrow_rounded, size: 20, color: context.lume.background),
+              decoration: BoxDecoration(
+                  color: context.lume.primary, shape: BoxShape.circle),
+              child: Icon(
+                  playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                  size: 20,
+                  color: context.lume.background),
             ),
           ),
           const SizedBox(width: 12),
@@ -440,7 +594,9 @@ class _AudioPlayer extends StatelessWidget {
                           margin: const EdgeInsets.symmetric(horizontal: 1),
                           height: math.max(5, _wave[i] * 0.78),
                           decoration: BoxDecoration(
-                            color: played ? context.lume.primary : context.lume.outline,
+                            color: played
+                                ? context.lume.primary
+                                : context.lume.outline,
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -451,7 +607,11 @@ class _AudioPlayer extends StatelessWidget {
                 const SizedBox(height: 7),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(2),
-                  child: LinearProgressIndicator(value: progress, minHeight: 4, backgroundColor: context.lume.outline, color: context.lume.primary),
+                  child: LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 4,
+                      backgroundColor: context.lume.outline,
+                      color: context.lume.primary),
                 ),
               ],
             ),
@@ -459,7 +619,11 @@ class _AudioPlayer extends StatelessWidget {
           const SizedBox(width: 10),
           Text(
             '0:${elapsed.floor().toString().padLeft(2, '0')} / 0:${seconds.toString().padLeft(2, '0')}',
-            style: TextStyle(fontFamily: fontFamily, fontSize: 11, fontWeight: FontWeight.w600, color: context.lume.inkMuted),
+            style: TextStyle(
+                fontFamily: fontFamily,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: context.lume.inkMuted),
           ),
         ],
       ),
@@ -478,15 +642,24 @@ class _ImagePlaceholder extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 20),
-      decoration: BoxDecoration(color: context.lume.surface, borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+          color: context.lume.surface, borderRadius: BorderRadius.circular(16)),
       child: Column(
         children: [
           Icon(Icons.image_outlined, size: 26, color: context.lume.inkMuted),
           const SizedBox(height: 8),
-          Text('Figura do material anexado', style: TextStyle(fontFamily: fontFamily, fontSize: 11, color: context.lume.inkMuted)),
+          Text('Figura do material anexado',
+              style: TextStyle(
+                  fontFamily: fontFamily,
+                  fontSize: 11,
+                  color: context.lume.inkMuted)),
           if (caption != null) ...[
             const SizedBox(height: 4),
-            Text(caption!, style: TextStyle(fontFamily: fontFamily, fontSize: 11, color: context.lume.inkMuted)),
+            Text(caption!,
+                style: TextStyle(
+                    fontFamily: fontFamily,
+                    fontSize: 11,
+                    color: context.lume.inkMuted)),
           ],
         ],
       ),
@@ -495,7 +668,11 @@ class _ImagePlaceholder extends StatelessWidget {
 }
 
 class _ChoiceButton extends StatelessWidget {
-  const _ChoiceButton({required this.label, required this.keyLabel, required this.onTap, required this.fontFamily});
+  const _ChoiceButton(
+      {required this.label,
+      required this.keyLabel,
+      required this.onTap,
+      required this.fontFamily});
 
   final String label;
   final String keyLabel;
@@ -512,20 +689,33 @@ class _ChoiceButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(border: Border.all(color: context.lume.outline), borderRadius: BorderRadius.circular(18)),
+          decoration: BoxDecoration(
+              border: Border.all(color: context.lume.outline),
+              borderRadius: BorderRadius.circular(18)),
           child: Row(
             children: [
               Container(
                 width: 24,
                 height: 24,
-                decoration: BoxDecoration(color: context.lume.surface, borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(
+                    color: context.lume.surface,
+                    borderRadius: BorderRadius.circular(8)),
                 alignment: Alignment.center,
-                child: Text(keyLabel, style: TextStyle(fontFamily: fontFamily, fontSize: 12, fontWeight: FontWeight.w700, color: context.lume.inkMuted)),
+                child: Text(keyLabel,
+                    style: TextStyle(
+                        fontFamily: fontFamily,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: context.lume.inkMuted)),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(label,
-                    style: TextStyle(fontFamily: fontFamily, fontSize: 14, fontWeight: FontWeight.w600, color: context.lume.ink)),
+                    style: TextStyle(
+                        fontFamily: fontFamily,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: context.lume.ink)),
               ),
             ],
           ),
@@ -545,6 +735,7 @@ class _ActionArea extends StatelessWidget {
     required this.onFlip,
     required this.nextLabel,
     required this.onNext,
+    required this.onRate,
   });
 
   final Flashcard card;
@@ -555,6 +746,7 @@ class _ActionArea extends StatelessWidget {
   final VoidCallback onFlip;
   final String nextLabel;
   final VoidCallback onNext;
+  final ValueChanged<bool> onRate;
 
   @override
   Widget build(BuildContext context) {
@@ -585,9 +777,13 @@ class _ActionArea extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             margin: const EdgeInsets.only(bottom: 10),
-            decoration: BoxDecoration(color: context.lume.surface, borderRadius: BorderRadius.circular(14)),
+            decoration: BoxDecoration(
+                color: context.lume.surface,
+                borderRadius: BorderRadius.circular(14)),
             child: Text(
-              wasCorrect ? '✓ Correto — ${card.back}' : '✕ Resposta certa: ${card.options![correctIndex]}',
+              wasCorrect
+                  ? '✓ Correto — ${card.back}'
+                  : '✕ Resposta certa: ${card.options![correctIndex]}',
               style: TextStyle(
                 fontFamily: fontFamily,
                 fontSize: 13,
@@ -610,19 +806,35 @@ class _ActionArea extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'O Lume reagenda pelo seu tempo de resposta — sem nota manual.',
+          'Você acertou a resposta?',
           textAlign: TextAlign.center,
-          style: TextStyle(fontFamily: fontFamily, fontSize: 12, color: context.lume.inkMuted),
+          style: TextStyle(
+              fontFamily: fontFamily,
+              fontSize: 12,
+              color: context.lume.inkMuted),
         ),
         const SizedBox(height: 10),
-        LumeButton(label: nextLabel, onPressed: onNext),
+        Row(children: [
+          Expanded(
+              child: LumeButton(
+                  label: 'Errei',
+                  variant: LumeButtonVariant.secondary,
+                  onPressed: () => onRate(false))),
+          const SizedBox(width: 12),
+          Expanded(
+              child:
+                  LumeButton(label: 'Acertei', onPressed: () => onRate(true))),
+        ]),
       ],
     );
   }
 }
 
 class _CompletionView extends StatelessWidget {
-  const _CompletionView({required this.sessionTitle, required this.isChallenge, required this.total});
+  const _CompletionView(
+      {required this.sessionTitle,
+      required this.isChallenge,
+      required this.total});
 
   final String sessionTitle;
   final bool isChallenge;
@@ -640,12 +852,20 @@ class _CompletionView extends StatelessWidget {
             width: 70,
             height: 70,
             margin: const EdgeInsets.only(bottom: 20),
-            decoration: BoxDecoration(color: context.lume.primary, borderRadius: BorderRadius.circular(24)),
-            child: Icon(Icons.check_rounded, size: 30, color: context.lume.background),
+            decoration: BoxDecoration(
+                color: context.lume.primary,
+                borderRadius: BorderRadius.circular(24)),
+            child: Icon(Icons.check_rounded,
+                size: 30, color: context.lume.background),
           ),
           Text(
             isChallenge ? 'Desafio concluído' : 'Sessão concluída',
-            style: TextStyle(fontFamily: fontFamily, fontSize: 23, fontWeight: FontWeight.w700, letterSpacing: -0.5, color: context.lume.ink),
+            style: TextStyle(
+                fontFamily: fontFamily,
+                fontSize: 23,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.5,
+                color: context.lume.ink),
           ),
           const SizedBox(height: 10),
           Padding(
@@ -653,14 +873,19 @@ class _CompletionView extends StatelessWidget {
             child: Text(
               '$total cartões revisados em $minutes min. Próxima leva às 20:00.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontFamily: fontFamily, fontSize: 15, height: 1.5, color: context.lume.inkMuted),
+              style: TextStyle(
+                  fontFamily: fontFamily,
+                  fontSize: 15,
+                  height: 1.5,
+                  color: context.lume.inkMuted),
             ),
           ),
           const SizedBox(height: 26),
           LumeButton(
             label: 'Voltar ao início',
             expand: false,
-            onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
+            onPressed: () =>
+                Navigator.of(context).popUntil((route) => route.isFirst),
           ),
         ],
       ),
