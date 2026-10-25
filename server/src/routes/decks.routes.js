@@ -172,7 +172,7 @@ router.post('/', async (req, res) => {
   const { name, description = '', dailyGoal = 20, remindersEnabled = true, reminderTimes = ['20:00'] } = req.body;
   if (!name) return res.status(400).json({ error: 'O nome do baralho é obrigatório.' });
 
-  const id = `deck-${randomUUID()}`;
+  const id = req.syncOperation ? req.body.id : `deck-${randomUUID()}`;
   try {
     const result = await pool.query(
       `INSERT INTO decks (id, name, description, daily_goal, reminders_enabled, reminder_times, user_id)
@@ -314,7 +314,7 @@ router.post('/:id/cards', async (req, res) => {
     return res.status(400).json({ error: 'Frente e verso do cartão são obrigatórios.' });
   }
 
-  const cardId = `card-${randomUUID()}`;
+  const cardId = req.syncOperation ? req.body.id : `card-${randomUUID()}`;
   try {
     const result = await pool.query(
       `INSERT INTO flashcards (id, deck_id, front, back, type, status, hint, options, correct_index, audio_seconds, ai_generated, media_caption)
@@ -512,9 +512,9 @@ router.post('/:deckId/cards/:cardId/review', async (req, res) => {
 
     // Registrar no log de estudos para calculo do progresso real
     await client.query(
-      `INSERT INTO study_logs (deck_id,card_id,correct,user_id,duration_seconds,deck_name,card_front,challenge_id)
-       VALUES ($1,$2,$3,$4,$5,(SELECT name FROM decks WHERE id = $1),$6,$7)`,
-      [req.params.deckId, req.params.cardId, correct, req.userId, durationSeconds, card.front, challengeId]
+      `INSERT INTO study_logs (deck_id,card_id,correct,user_id,duration_seconds,deck_name,card_front,challenge_id,created_at)
+       VALUES ($1,$2,$3,$4,$5,(SELECT name FROM decks WHERE id = $1),$6,$7,COALESCE($8::timestamptz,CURRENT_TIMESTAMP))`,
+      [req.params.deckId, req.params.cardId, correct, req.userId, durationSeconds, card.front, challengeId, req.syncOperation ? req.body.reviewedAt : null]
     );
 
     await refreshChallenges(req.userId, client);
@@ -558,7 +558,7 @@ router.post('/:id/cards/batch', async (req, res, next) => {
          VALUES ($1, $2, $3, $4, $5, true, $6, $7)
          RETURNING id, front, back, type, status, ai_generated AS "aiGenerated",
                    audio_seconds AS "audioSeconds", media_caption AS "mediaCaption"`,
-        [`card-${randomUUID()}`, req.params.id, card.front, card.back, card.type ?? 'text',
+        [req.syncOperation ? card.id : `card-${randomUUID()}`, req.params.id, card.front, card.back, card.type ?? 'text',
          card.audioSeconds ?? 8, card.mediaCaption ?? null]);
       saved.push(result.rows[0]);
     }

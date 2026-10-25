@@ -36,3 +36,15 @@ O design segue uma linha bem calma de propósito: sem gradientes chamativos, sem
 A cor de destaque é um verde-petróleo, usado só onde importa: botões de ação, ícones ativos, coisas que você pode interagir. O resto da tela é neutro com um cinza claro no tema claro, cinza escuro de verdade no tema escuro, pra esse verde nunca brigar com o texto nem cansar quem estuda por horas. Os cantos são arredondados, os toques têm um feedback suave (o botão "encolhe" um pouquinho quando você aperta), e cada ação principal fica sempre num lugar fácil de alcançar com o polegar, mesmo segurando o celular com uma mão só.
 
 No fim das contas, a gente queria um app que parecesse algo simples e dinâmico.
+
+## Persistência e autenticação — Parte 2
+
+O app usa MVVM, API Express com PostgreSQL e SQLite no aparelho. O login real
+protege as rotas e separa os dados por usuário. Baralhos, cartões e revisões
+comuns podem ser salvos offline e sincronizados ao recuperar a conexão.
+
+Consulte [o funcionamento e os testes de sincronização offline](docs/OFFLINE.md)
+e [o estado da implementação e a configuração de entrega](server/IMPLEMENTATION.md).
+As referências a IA no conceito original representam protótipos: não há integração
+real com provedor de IA. Biometria e repetição espaçada avançada também são
+protótipos. E-mail e push dependem de configuração externa.

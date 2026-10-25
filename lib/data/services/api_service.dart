@@ -1,6 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+
+bool isConnectionFailure(Object error) =>
+    error is TimeoutException || error is http.ClientException;
 
 class ApiException implements Exception {
   ApiException(this.statusCode, this.message);
@@ -83,6 +87,23 @@ class ApiService {
     } catch (e) {
       debugPrint('❌ Erro HTTP DELETE [$endpoint]: $e');
       rethrow;
+    }
+  }
+
+  Future<dynamic> sendQueuedMutation(String method, String endpoint,
+      Map<String, dynamic> body, String operationId) async {
+    final request = http.Request(method, Uri.parse('$_baseUrl$endpoint'))
+      ..headers.addAll({..._headers, 'Idempotency-Key': operationId})
+      ..body = jsonEncode(body);
+    final client = http.Client();
+    try {
+      final response = await client
+          .send(request)
+          .then(http.Response.fromStream)
+          .timeout(const Duration(seconds: 15));
+      return _processResponse(response);
+    } finally {
+      client.close();
     }
   }
 

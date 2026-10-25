@@ -1,3 +1,4 @@
+import { syncMutation } from './services/sync_mutation.js';
 import { processNotifications } from './services/notifications.js';
 import { refreshChallenges } from './services/challenges.js';
 import { pool } from './db.js';
@@ -38,7 +39,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Rotas da API REST
 app.use('/api/auth', authRoutes);
-app.use('/api/decks', requireAuth, decksRoutes);
+app.use('/api/decks', requireAuth, syncMutation, decksRoutes);
 app.use('/api/progress', requireAuth, progressRoutes);
 app.use('/api/challenges', requireAuth, challengesRoutes);
 app.use('/api/notifications', requireAuth, notificationsRoutes);

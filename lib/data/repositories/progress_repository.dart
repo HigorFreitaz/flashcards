@@ -1,3 +1,4 @@
+import '../services/offline_api_service.dart';
 import 'package:flutter/foundation.dart';
 import '../services/api_service.dart';
 import '../../models/study_history_entry.dart';
@@ -5,11 +6,20 @@ import '../../models/study_history_entry.dart';
 /// Estatísticas de progresso e gamificação do usuário integradas à API REST.
 class ProgressRepository extends ChangeNotifier {
   ProgressRepository([ApiService? apiService]) : _apiService = apiService {
+    if (apiService is OfflineApiService) apiService.status.addListener(_afterSync);
     if (_apiService?.authToken != null) {
       fetchProgress();
     }
   }
 
+  int _syncRevision = 0;
+  void _afterSync() {
+    final status = (_apiService as OfflineApiService).status;
+    if (status.revision != _syncRevision) {
+      _syncRevision = status.revision;
+      fetchProgress();
+    }
+  }
   bool _disposed = false;
   @override
   void notifyListeners() {
@@ -18,6 +28,7 @@ class ProgressRepository extends ChangeNotifier {
 
   @override
   void dispose() {
+    if (_apiService is OfflineApiService) (_apiService).status.removeListener(_afterSync);
     _disposed = true;
     super.dispose();
   }

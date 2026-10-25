@@ -31,9 +31,9 @@ after(async () => {
   if (server) await new Promise(resolve => server.close(resolve));
   await pool.end();
 });
-async function request(path, { token, method = 'GET', body } = {}) {
+async function request(path, { token, method = 'GET', body, key } = {}) {
   const response = await fetch(base + path, {
-    method, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    method, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(key ? { 'Idempotency-Key': key } : {}) },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const text = await response.text();
@@ -234,4 +234,34 @@ test('notification CRUD, due scheduling, deduplication, and push failures remain
   assert.equal((await request('/notifications',{token:user.token})).body.filter(n=>n.body.includes('Reminder')).length,0);
   await request(`/notifications/${id}`,{token:user.token,method:'DELETE'});
   assert.equal((await request('/notifications',{token:user.token})).body.some(n=>n.id===id),false);
+});
+
+
+test('offline outbox retries are atomic, idempotent and owned by the account', async () => {
+  const user = await signup('Offline'), other = await signup('Other');
+  const id = () => randomUUID().replaceAll('-', '');
+  const deckId = 'local-' + id(), cardId = 'local-' + id();
+  const create = { token: user.token, method: 'POST', key: id(), body: { id: deckId, name: 'Offline deck' } };
+  const [one,two] = await Promise.all([request('/decks',create), request('/decks',create)]);
+  assert.equal(one.status,201); assert.deepEqual(one,two);
+  assert.equal((await request('/decks',{token:user.token})).body.length,1);
+  assert.equal((await request(`/decks/${deckId}/cards/batch`, {token:user.token,method:'POST',key:id(),body:{cards:'invalid'}})).status,400);
+  assert.equal((await request('/decks',{...create,body:{...create.body,name:'Changed replay'}})).status,409);
+  const card = {token:user.token,method:'POST',key:id(),body:{id:cardId,front:'Q',back:'A'}};
+  assert.equal((await request(`/decks/${deckId}/cards`,card)).status,201);
+  const review = {token:user.token,method:'POST',key:id(),body:{correct:true,durationSeconds:60,reviewedAt:'2026-10-01T12:00:00.000Z'}};
+  const first = await request(`/decks/${deckId}/cards/${cardId}/review`,review);
+  assert.equal(first.status,200);
+  assert.deepEqual(await request(`/decks/${deckId}/cards/${cardId}/review`,review),first);
+  const logs = await request('/progress/history',{token:user.token});
+  assert.equal(logs.body.length,1); assert.equal(logs.body[0].createdAt,review.body.reviewedAt);
+  assert.equal((await request('/progress',{token:user.token})).body.totalXp,10);
+  assert.equal((await request(`/decks/${deckId}/cards/${cardId}`,{token:other.token,method:'PUT',key:id(),body:{front:'Theft'}})).status,404);
+  const invalid = {token:user.token,method:'PUT',key:id(),body:{front:''}};
+  assert.equal((await request(`/decks/${deckId}/cards/${cardId}`,invalid)).status,400);
+  assert.equal((await pool.query('SELECT COUNT(*)::int AS n FROM sync_receipts WHERE user_id=$1 AND operation_id=$2',[user.id,invalid.key])).rows[0].n,0);
+  const remove = {token:user.token,method:'DELETE',key:id(),body:{}};
+  assert.equal((await request(`/decks/${deckId}`,remove)).status,204);
+  assert.equal((await request(`/decks/${deckId}`,remove)).status,204);
+  assert.equal((await request(`/decks/${deckId}/cards/${cardId}`,{token:user.token,method:'PUT',key:id(),body:{front:'Gone'}})).status,404);
 });

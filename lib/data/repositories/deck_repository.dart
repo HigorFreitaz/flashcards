@@ -1,3 +1,4 @@
+import '../services/offline_api_service.dart';
 import 'package:flutter/foundation.dart';
 import '../../models/deck.dart';
 import '../../models/flashcard.dart';
@@ -5,6 +6,7 @@ import '../services/api_service.dart';
 
 class DeckRepository extends ChangeNotifier {
   DeckRepository([ApiService? apiService]) : _apiService = apiService {
+    if (apiService is OfflineApiService) apiService.status.addListener(_onSync);
     if (_apiService?.authToken != null) fetchDecks();
   }
   final ApiService? _apiService;
@@ -18,8 +20,35 @@ class DeckRepository extends ChangeNotifier {
 
   @override
   void dispose() {
+    if (_apiService is OfflineApiService) {
+      (_apiService).status.removeListener(_onSync);
+    }
     _disposed = true;
     super.dispose();
+  }
+
+  SyncStatus? get syncStatus =>
+      _apiService is OfflineApiService ? (_apiService).status : null;
+  Future<void> synchronize() async {
+    if (_apiService is OfflineApiService) await (_apiService).synchronize();
+  }
+
+  Future<void> discardPending() async {
+    if (_apiService is OfflineApiService) await (_apiService).discardPending();
+  }
+
+  void _onSync() {
+    if (syncStatus?.syncing == false) _reloadCache();
+    notifyListeners();
+  }
+
+  Future<void> _reloadCache() async {
+    final data = await (_apiService as OfflineApiService).cachedDecks();
+    if (_disposed) return;
+    decks
+      ..clear()
+      ..addAll(data.map((item) => Deck.fromJson(item as Map<String, dynamic>)));
+    notifyListeners();
   }
 
   ApiService get _api => _apiService ?? (throw StateError('API indisponível.'));

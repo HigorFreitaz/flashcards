@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
 import pg from 'pg';
 import dotenv from 'dotenv';
 
@@ -8,9 +9,35 @@ const { Pool } = pg;
 const connectionString = process.env.DATABASE_URL ||
   `postgres://${process.env.POSTGRES_USER || 'lume_user'}:${process.env.POSTGRES_PASSWORD || 'lume_password'}@${process.env.POSTGRES_HOST || 'localhost'}:${process.env.POSTGRES_PORT || 5432}/${process.env.POSTGRES_DB || 'lume_db'}`;
 
-export const pool = new Pool({
+const realPool = new Pool({
   connectionString,
 });
+
+// A queued mutation and its receipt share one transaction, even when a route
+// normally opens its own transaction. Route-level commits become no-ops here.
+export const transactionScope = new AsyncLocalStorage();
+export const pool = {
+  query: (...args) => (transactionScope.getStore() ?? realPool).query(...args),
+  connect: async () => transactionScope.getStore() ?? realPool.connect(),
+  end: () => realPool.end(),
+};
+export async function syncTransaction(work) {
+  const client = await realPool.connect();
+  try {
+    await client.query('BEGIN');
+    const scoped = {
+      query: (sql, ...args) => /^(BEGIN|COMMIT|ROLLBACK)$/i.test(sql.trim())
+        ? Promise.resolve({ rows: [] }) : client.query(sql, ...args),
+      release() {},
+    };
+    const result = await transactionScope.run(scoped, () => work(client));
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally { client.release(); }
+}
 
 export async function initDb() {
   const client = await pool.connect();
@@ -169,6 +196,13 @@ export async function initDb() {
         token TEXT NOT NULL, platform TEXT NOT NULL DEFAULT 'unknown', PRIMARY KEY (user_id, token)
       );
     `);
+    await client.query(`CREATE TABLE IF NOT EXISTS sync_receipts (
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      operation_id TEXT NOT NULL, fingerprint TEXT NOT NULL,
+      status INTEGER NOT NULL, response JSONB,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (user_id, operation_id)
+    )`);
     await client.query('COMMIT');
     console.log('✅ Banco de dados PostgreSQL inicializado sem dados mockados (Production-Ready).');
   } catch (err) {

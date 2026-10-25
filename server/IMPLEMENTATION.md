@@ -26,7 +26,17 @@ Legacy rows are not automatically assigned to an arbitrary account. From `server
 
 ## Validation
 
-- `flutter test --no-pub`: 10 passing tests covering failed saves, account changes, session restoration, moving cards, new-only deck study access, answer-type changes and text grading.
+- `flutter test --no-pub`: tests cover failed saves, account changes, session restoration, moving cards, new-only deck study access, answer-type changes, text grading, SQLite persistence and offline synchronization. Set `LUME_TEST_API` to a disposable API to run the live offline integration test too.
 - `flutter analyze --no-pub`: no issues.
-- `npm test` with `TEST_DATABASE_URL` pointing at a disposable database ending in `_test`: 6 passing integration tests covering accounts, ownership, decks/cards, history/settings, challenges, scheduling and push failure/retry.
+- `npm test` with `TEST_DATABASE_URL` pointing at a disposable database ending in `_test`: integration tests covering accounts, ownership, decks/cards, history/settings, challenges, scheduling, push failure/retry and idempotent offline mutations.
 - Delivery tests use local mock gateways. Real email providers, native push SDKs and physical-device delivery still need configuration and device testing.
+
+## Offline synchronization (#9)
+
+The mobile app caches decks/cards and previously fetched read responses in
+SQLite, scoped by account. Deck/card changes and ordinary study reviews are
+saved atomically with a durable FIFO outbox. The app retries on launch, foreground
+resume, manual synchronization, and every 30 seconds while running. PostgreSQL
+remains authoritative: after replaying pending writes, the app replaces its deck
+snapshot with the server response. See `../docs/OFFLINE.md` for behavior, conflict
+resolution, limitations and a reproducible test procedure.

@@ -1,3 +1,4 @@
+import '../services/offline_api_service.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../models/challenge_history_entry.dart';
@@ -6,11 +7,20 @@ import '../services/api_service.dart';
 /// Fonte única da verdade para o desafio semanal e seu histórico integrado à API REST.
 class ChallengeRepository extends ChangeNotifier {
   ChallengeRepository([ApiService? apiService]) : _apiService = apiService {
+    if (apiService is OfflineApiService) apiService.status.addListener(_afterSync);
     if (_apiService?.authToken != null) {
       fetchChallenges();
     }
   }
 
+  int _syncRevision = 0;
+  void _afterSync() {
+    final status = (_apiService as OfflineApiService).status;
+    if (status.revision != _syncRevision) {
+      _syncRevision = status.revision;
+      fetchChallenges();
+    }
+  }
   bool _disposed = false;
   @override
   void notifyListeners() {
@@ -19,6 +29,7 @@ class ChallengeRepository extends ChangeNotifier {
 
   @override
   void dispose() {
+    if (_apiService is OfflineApiService) (_apiService).status.removeListener(_afterSync);
     _disposed = true;
     super.dispose();
   }

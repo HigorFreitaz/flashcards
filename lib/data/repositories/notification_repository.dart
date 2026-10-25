@@ -1,3 +1,4 @@
+import '../services/offline_api_service.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 
@@ -7,6 +8,7 @@ import '../services/api_service.dart';
 /// Fonte única da verdade para as notificações integradas à API REST.
 class NotificationRepository extends ChangeNotifier {
   NotificationRepository([ApiService? apiService]) : _apiService = apiService {
+    if (apiService is OfflineApiService) apiService.status.addListener(_afterSync);
     if (_apiService?.authToken != null) {
       fetchNotifications();
       _timer = Timer.periodic(
@@ -16,6 +18,14 @@ class NotificationRepository extends ChangeNotifier {
 
   Timer? _timer;
   String? error;
+  int _syncRevision = 0;
+  void _afterSync() {
+    final status = (_apiService as OfflineApiService).status;
+    if (status.revision != _syncRevision) {
+      _syncRevision = status.revision;
+      fetchNotifications();
+    }
+  }
   bool _disposed = false;
   @override
   void notifyListeners() {
@@ -25,6 +35,7 @@ class NotificationRepository extends ChangeNotifier {
   @override
   void dispose() {
     _timer?.cancel();
+    if (_apiService is OfflineApiService) (_apiService).status.removeListener(_afterSync);
     _disposed = true;
     super.dispose();
   }

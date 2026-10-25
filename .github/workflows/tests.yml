@@ -3,12 +3,42 @@ on: [push, pull_request, workflow_dispatch]
 jobs:
   flutter:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: lume_test
+          POSTGRES_PASSWORD: test_only
+          POSTGRES_DB: lume_offline_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U lume_test -d lume_offline_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://lume_test:test_only@localhost:5432/lume_offline_test
+      PORT: '52991'
+      LUME_TEST_API: http://127.0.0.1:52991/api
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+        working-directory: server
+      - name: Start disposable API
+        shell: bash
+        run: |
+          node server/src/server.js > "$RUNNER_TEMP/lume-api.log" 2>&1 &
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:52991/health; then exit 0; fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/lume-api.log"
+          exit 1
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test

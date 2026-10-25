@@ -1,3 +1,4 @@
+import '../services/offline_api_service.dart';
 import 'package:flutter/material.dart';
 
 import '../services/api_service.dart';
@@ -5,11 +6,20 @@ import '../services/api_service.dart';
 /// Guarda as preferências do app integradas à API REST.
 class SettingsRepository extends ChangeNotifier {
   SettingsRepository([ApiService? apiService]) : _apiService = apiService {
+    if (apiService is OfflineApiService) apiService.status.addListener(_afterSync);
     if (_apiService?.authToken != null) {
       fetchSettings();
     }
   }
 
+  int _syncRevision = 0;
+  void _afterSync() {
+    final status = (_apiService as OfflineApiService).status;
+    if (status.revision != _syncRevision) {
+      _syncRevision = status.revision;
+      fetchSettings();
+    }
+  }
   bool _disposed = false;
   @override
   void notifyListeners() {
@@ -18,6 +28,7 @@ class SettingsRepository extends ChangeNotifier {
 
   @override
   void dispose() {
+    if (_apiService is OfflineApiService) (_apiService).status.removeListener(_afterSync);
     _disposed = true;
     super.dispose();
   }

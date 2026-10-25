@@ -1,3 +1,5 @@
+import '../../data/repositories/deck_repository.dart';
+import '../../widgets/feedback/lume_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -21,7 +23,8 @@ class RootShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (ctx) => RootShellViewModel(ctx.read<SettingsRepository>()),
+      create: (ctx) => RootShellViewModel(
+          ctx.read<SettingsRepository>(), ctx.read<DeckRepository>()),
       child: _RootShellView(initialTab: initialTab),
     );
   }
@@ -36,7 +39,8 @@ class _RootShellView extends StatefulWidget {
   State<_RootShellView> createState() => _RootShellViewState();
 }
 
-class _RootShellViewState extends State<_RootShellView> with WidgetsBindingObserver {
+class _RootShellViewState extends State<_RootShellView>
+    with WidgetsBindingObserver {
   late int _index = widget.initialTab;
   bool _locked = false;
 
@@ -57,7 +61,8 @@ class _RootShellViewState extends State<_RootShellView> with WidgetsBindingObser
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (!mounted) return;
-    if (state == AppLifecycleState.resumed && context.read<RootShellViewModel>().biometricLockEnabled) {
+    if (state == AppLifecycleState.resumed &&
+        context.read<RootShellViewModel>().biometricLockEnabled) {
       setState(() => _locked = true);
     }
   }
@@ -66,10 +71,12 @@ class _RootShellViewState extends State<_RootShellView> with WidgetsBindingObser
   Widget build(BuildContext context) {
     // Observa a ViewModel aqui para que qualquer troca de tema/segurança
     // reconstrua toda a casca de uma vez, barra inferior incluída.
-    context.watch<RootShellViewModel>();
+    final viewModel = context.watch<RootShellViewModel>();
 
     final tabs = [
-      HomeScreen(onGoToChallengeTab: () => _goToTab(2), onGoToLibraryTab: () => _goToTab(1)),
+      HomeScreen(
+          onGoToChallengeTab: () => _goToTab(2),
+          onGoToLibraryTab: () => _goToTab(1)),
       const LibraryScreen(),
       const ChallengeScreen(),
       const SettingsScreen(),
@@ -78,8 +85,57 @@ class _RootShellViewState extends State<_RootShellView> with WidgetsBindingObser
     return Scaffold(
       body: Stack(
         children: [
-          IndexedStack(index: _index, children: tabs),
-          if (_locked) _BiometricLockScreen(onUnlock: () => setState(() => _locked = false)),
+          Column(children: [
+            if (viewModel.syncMessage != null)
+              SafeArea(
+                  bottom: false,
+                  child: MaterialBanner(
+                    content: Text(viewModel.syncMessage!),
+                    actions: [
+                      TextButton(
+                          onPressed:
+                              viewModel.syncing ? null : viewModel.synchronize,
+                          child: const Text('Sincronizar')),
+                      if (viewModel.syncConflict)
+                        TextButton(
+                            onPressed: () async {
+                              final discard = await showDialog<bool>(
+                                  context: context,
+                                  builder: (ctx) => AlertDialog(
+                                        title: const Text(
+                                            'Usar dados do servidor?'),
+                                        content: const Text(
+                                            'As alterações ainda não sincronizadas deste aparelho serão descartadas. Esta ação não pode ser desfeita.'),
+                                        actions: [
+                                          TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(ctx, false),
+                                              child: const Text(
+                                                  'Manter alterações')),
+                                          TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(ctx, true),
+                                              child: const Text(
+                                                  'Descartar e atualizar')),
+                                        ],
+                                      ));
+                              if (discard != true) return;
+                              try {
+                                await viewModel.discardPending();
+                              } catch (error) {
+                                if (context.mounted) {
+                                  showLumeToast(context, error.toString());
+                                }
+                              }
+                            },
+                            child: const Text('Resolver')),
+                    ],
+                  )),
+            Expanded(child: IndexedStack(index: _index, children: tabs)),
+          ]),
+          if (_locked)
+            _BiometricLockScreen(
+                onUnlock: () => setState(() => _locked = false)),
         ],
       ),
       bottomNavigationBar: _LumeNavBar(index: _index, onChanged: _goToTab),
@@ -109,19 +165,31 @@ class _BiometricLockScreen extends StatelessWidget {
                     width: 84,
                     height: 84,
                     margin: const EdgeInsets.only(bottom: 24),
-                    decoration: BoxDecoration(color: context.lume.surface, borderRadius: BorderRadius.circular(28)),
+                    decoration: BoxDecoration(
+                        color: context.lume.surface,
+                        borderRadius: BorderRadius.circular(28)),
                     alignment: Alignment.center,
-                    child: Icon(Icons.fingerprint, size: 42, color: context.lume.primary),
+                    child: Icon(Icons.fingerprint,
+                        size: 42, color: context.lume.primary),
                   ),
                   Text(
                     'Lume bloqueado',
-                    style: TextStyle(fontFamily: fontFamily, fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -0.4, color: context.lume.ink),
+                    style: TextStyle(
+                        fontFamily: fontFamily,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.4,
+                        color: context.lume.ink),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Use sua digital ou Face ID para continuar.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontFamily: fontFamily, fontSize: 14, height: 1.4, color: context.lume.inkMuted),
+                    style: TextStyle(
+                        fontFamily: fontFamily,
+                        fontSize: 14,
+                        height: 1.4,
+                        color: context.lume.inkMuted),
                   ),
                   const SizedBox(height: 30),
                   LumeButton(
@@ -147,17 +215,37 @@ class _LumeNavBar extends StatelessWidget {
   final ValueChanged<int> onChanged;
 
   static const _items = [
-    (icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Início'),
-    (icon: Icons.style_outlined, activeIcon: Icons.style_rounded, label: 'Baralhos'),
-    (icon: Icons.diamond_outlined, activeIcon: Icons.diamond_rounded, label: 'Desafios'),
-    (icon: Icons.settings_outlined, activeIcon: Icons.settings_rounded, label: 'Ajustes'),
+    (
+      icon: Icons.home_outlined,
+      activeIcon: Icons.home_rounded,
+      label: 'Início'
+    ),
+    (
+      icon: Icons.style_outlined,
+      activeIcon: Icons.style_rounded,
+      label: 'Baralhos'
+    ),
+    (
+      icon: Icons.diamond_outlined,
+      activeIcon: Icons.diamond_rounded,
+      label: 'Desafios'
+    ),
+    (
+      icon: Icons.settings_outlined,
+      activeIcon: Icons.settings_rounded,
+      label: 'Ajustes'
+    ),
   ];
 
   @override
   Widget build(BuildContext context) {
     final fontFamily = Theme.of(context).textTheme.bodyMedium?.fontFamily;
     return Container(
-      padding: EdgeInsets.only(top: 10, left: 12, right: 12, bottom: MediaQuery.of(context).padding.bottom + 8),
+      padding: EdgeInsets.only(
+          top: 10,
+          left: 12,
+          right: 12,
+          bottom: MediaQuery.of(context).padding.bottom + 8),
       decoration: BoxDecoration(
         color: context.lume.background,
         border: Border(top: BorderSide(color: context.lume.outline)),
@@ -176,7 +264,8 @@ class _LumeNavBar extends StatelessWidget {
                   Icon(
                     selected ? item.activeIcon : item.icon,
                     size: 22,
-                    color: selected ? context.lume.primary : context.lume.inkMuted,
+                    color:
+                        selected ? context.lume.primary : context.lume.inkMuted,
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -185,7 +274,9 @@ class _LumeNavBar extends StatelessWidget {
                       fontFamily: fontFamily,
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: selected ? context.lume.primary : context.lume.inkMuted,
+                      color: selected
+                          ? context.lume.primary
+                          : context.lume.inkMuted,
                     ),
                   ),
                 ],

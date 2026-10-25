@@ -13,6 +13,7 @@ class AuthService {
     final token = response['token'] as String;
     await _store.save(token);
     _api.authToken = token;
+    await _cacheUser(response['user'] as Map<String, dynamic>);
     return AppUser.fromJson(response['user'] as Map<String, dynamic>);
   }
 
@@ -20,17 +21,35 @@ class AuthService {
       '/auth/login', {'email': user.email, 'password': user.password});
   Future<AppUser?> signup(AppUser user) => _authenticate('/auth/signup',
       {'name': user.name, 'email': user.email, 'password': user.password});
+  Future<void> _cacheUser(Map<String, dynamic> user) async {
+    final previous = await _store.readUser();
+    await _store.saveUser({
+      'user': user,
+      'offlineUntil': previous?['offlineUntil'] ??
+          DateTime.now().toUtc().add(const Duration(days: 29)).toIso8601String()
+    });
+  }
+
   Future<AppUser?> restore() async {
     _api.authToken = await _store.read();
     if (_api.authToken == null) return null;
     try {
       final response = await _api.get('/auth/me');
+      await _cacheUser(response['user'] as Map<String, dynamic>);
       return AppUser.fromJson(response['user'] as Map<String, dynamic>);
     } on ApiException catch (error) {
       if (error.statusCode != 401) rethrow;
       _api.authToken = null;
       await _store.clear();
       return null;
+    } catch (error) {
+      if (!isConnectionFailure(error)) rethrow;
+      final cached = await _store.readUser();
+      final until = DateTime.tryParse(cached?['offlineUntil'] ?? '');
+      if (until != null && until.isAfter(DateTime.now())) {
+        return AppUser.fromJson(Map<String, dynamic>.from(cached!['user']));
+      }
+      rethrow;
     }
   }
 

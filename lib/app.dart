@@ -1,3 +1,5 @@
+import 'data/services/offline_api_service.dart';
+import 'data/services/offline_store.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -16,7 +18,9 @@ import 'screens/onboarding/onboarding_screen.dart';
 import 'theme/lume_theme.dart';
 
 class LumeApp extends StatelessWidget {
-  const LumeApp({super.key, this.apiService, this.sessionStore});
+  const LumeApp(
+      {super.key, this.apiService, this.sessionStore, this.offlineStore});
+  final OfflineStore? offlineStore;
   final SessionStore? sessionStore;
 
   final ApiService? apiService;
@@ -25,6 +29,12 @@ class LumeApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        Provider<OfflineStore>(
+            create: (_) =>
+                offlineStore ??
+                (apiService == null
+                    ? SqliteOfflineStore()
+                    : MemoryOfflineStore())),
         Provider<ApiService>(create: (_) => apiService ?? ApiService()),
         Provider(
             create: (ctx) => AuthService(ctx.read<ApiService>(),
@@ -36,19 +46,27 @@ class LumeApp extends StatelessWidget {
             create: (ctx) =>
                 UserRepository(ctx.read<AuthService>())..restore()),
       ],
-      child: const _AccountScope(),
+      child: _AccountScope(
+          offlineEnabled: apiService == null || offlineStore != null),
     );
   }
 }
 
 class _AccountScope extends StatelessWidget {
-  const _AccountScope();
+  const _AccountScope({required this.offlineEnabled});
+  final bool offlineEnabled;
   @override
   Widget build(BuildContext context) {
     final userId = context.watch<UserRepository>().currentUser?.id;
     return MultiProvider(
       key: ValueKey(userId),
       providers: [
+        if (offlineEnabled && userId != null)
+          Provider<ApiService>(
+            create: (ctx) => OfflineApiService(context.read<ApiService>(),
+                context.read<OfflineStore>(), userId),
+            dispose: (_, api) => (api as OfflineApiService).dispose(),
+          ),
         ChangeNotifierProvider(
             create: (ctx) => DeckRepository(ctx.read<ApiService>())),
         ChangeNotifierProvider(
