@@ -12,7 +12,8 @@ export async function syncMutation(req, res, next) {
   const allowed = req.method === 'POST'
     ? new RegExp(`^/(?:${segment}/cards(?:/batch|/${segment}/review)?)?/?$`)
     : new RegExp(`^/${segment}(?:/cards/${segment})?/?$`);
-  if (!allowed.test(req.path)) return res.status(400).json({ error: 'Rota de sincronização inválida.' });
+  const settings = req.baseUrl === '/api/settings' && req.path === '/' && ['PUT', 'DELETE'].includes(req.method);
+  if (!settings && !allowed.test(req.path)) return res.status(400).json({ error: 'Rota de sincronização inválida.' });
   const creating = req.method === 'POST' && !req.path.endsWith('/review');
   const ids = req.path.endsWith('/batch')
     ? (Array.isArray(req.body.cards) ? req.body.cards.map(c => c?.id) : [])

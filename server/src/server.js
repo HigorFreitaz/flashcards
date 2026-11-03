@@ -43,7 +43,7 @@ app.use('/api/decks', requireAuth, syncMutation, decksRoutes);
 app.use('/api/progress', requireAuth, progressRoutes);
 app.use('/api/challenges', requireAuth, challengesRoutes);
 app.use('/api/notifications', requireAuth, notificationsRoutes);
-app.use('/api/settings', requireAuth, settingsRoutes);
+app.use('/api/settings', requireAuth, syncMutation, settingsRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err);

@@ -1,10 +1,14 @@
-import 'dart:async';
+  import 'dart:async';
 import 'dart:convert';
+import 'connection_errors_stub.dart'
+    if (dart.library.io) 'connection_errors_io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 bool isConnectionFailure(Object error) =>
-    error is TimeoutException || error is http.ClientException;
+    error is TimeoutException ||
+    error is http.ClientException ||
+    isPlatformConnectionFailure(error);
 
 class ApiException implements Exception {
   ApiException(this.statusCode, this.message);

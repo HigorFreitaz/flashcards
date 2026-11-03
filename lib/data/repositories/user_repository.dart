@@ -9,6 +9,7 @@ class UserRepository extends ChangeNotifier {
 
   final AuthService _authService;
   bool _disposed = false;
+  int _sessionVersion = 0;
   @override
   void notifyListeners() {
     if (!_disposed) super.notifyListeners();
@@ -25,11 +26,23 @@ class UserRepository extends ChangeNotifier {
   bool restoring = true;
   String? restoreError;
   Future<void> restore() async {
+    final version = ++_sessionVersion;
     restoring = true;
     try {
-      currentUser = await _authService.restore();
+      final cached = await _authService.restoreCached();
+      if (version != _sessionVersion || _disposed) return;
+      currentUser = cached;
+      if (cached != null) {
+        restoring = false;
+        restoreError = null;
+        notifyListeners();
+      }
+      final validated = await _authService.restore();
+      if (version != _sessionVersion || _disposed) return;
+      currentUser = validated;
       restoreError = null;
     } catch (_) {
+      if (version != _sessionVersion || _disposed) return;
       restoreError =
           'Não foi possível restaurar a sessão. Verifique sua conexão.';
     }
@@ -42,6 +55,7 @@ class UserRepository extends ChangeNotifier {
       _authService.resetPassword(token, password);
 
   Future<bool> login(String email, String password) async {
+    _sessionVersion++;
     final user = await _authService
         .login(AppUser.login(email: email, password: password));
     if (user == null) return false;
@@ -52,6 +66,7 @@ class UserRepository extends ChangeNotifier {
   }
 
   Future<bool> signup(String name, String email, String password) async {
+    _sessionVersion++;
     final user = await _authService
         .signup(AppUser(name: name, email: email, password: password));
     if (user == null) return false;
@@ -74,6 +89,7 @@ class UserRepository extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    _sessionVersion++;
     await _authService.logout();
     currentUser = null;
     notifyListeners();

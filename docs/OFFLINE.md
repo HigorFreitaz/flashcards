@@ -14,8 +14,15 @@ que foi feita, mesmo que seja enviada no dia seguinte. Estatísticas e outras
 consultas mostram a última resposta salva; os resultados oficiais são atualizados
 depois da sincronização. O banner informa o modo offline e as pendências.
 
+Tema, fuso horário e restauração das configurações também são persistidos no
+SQLite e enviados pela mesma fila. As leituras salvas abrem sem aguardar a rede;
+uma tentativa de sincronização não bloqueia as edições locais. O servidor recebe
+as configurações com recibos de idempotência para permitir reenvio seguro.
+
 O perfil local permite reabertura por até 29 dias após o login, sem estender o
-prazo a cada abertura. O servidor mantém sessões de 30 dias e um retorno 401 na
+prazo a cada abertura. A sessão válida salva no SQLite abre a tela imediatamente;
+a validação no servidor ocorre em segundo plano, sem bloquear a abertura quando
+o aparelho está sem rede. O servidor mantém sessões de 30 dias e um retorno 401 na
 restauração remove a sessão local. Não há login inicial offline nem validação
 local de senhas. Logout remove token e perfil; pendências permanecem vinculadas
 à conta e só voltam a ser enviadas após autenticar novamente nessa mesma conta.
@@ -43,8 +50,8 @@ for possível baixar os dados do servidor, o descarte não acontece.
 
 ## Limites preservados
 
-Cadastro, login inicial, alterações da conta, gerenciamento de desafios,
-configurações e notificações exigem conexão para gravar. Revisões de desafios
+Cadastro, login inicial, alterações da conta, gerenciamento de desafios
+e notificações exigem conexão para gravar. Revisões de desafios
 exigem sincronização prévia e conexão para validar prazo/participação. As revisões
 comuns funcionam offline. IA, biometria e repetição espaçada avançada continuam
 protótipos, conforme o escopo do projeto.

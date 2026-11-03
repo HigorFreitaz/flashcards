@@ -7,8 +7,10 @@ class AuthService {
       : _store = sessionStore ?? MemorySessionStore();
   final ApiService _api;
   final SessionStore _store;
+  int _sessionVersion = 0;
   Future<AppUser?> _authenticate(
       String path, Map<String, dynamic> payload) async {
+    _sessionVersion++;
     final response = await _api.post(path, payload);
     final token = response['token'] as String;
     await _store.save(token);
@@ -30,25 +32,41 @@ class AuthService {
     });
   }
 
-  Future<AppUser?> restore() async {
+  Future<AppUser?> restoreCached() async {
     _api.authToken = await _store.read();
     if (_api.authToken == null) return null;
+    return _cachedUser();
+  }
+
+  Future<AppUser?> _cachedUser() async {
+    final cached = await _store.readUser();
+    final until = DateTime.tryParse(cached?['offlineUntil'] ?? '');
+    if (until == null || !until.isAfter(DateTime.now())) return null;
+    return AppUser.fromJson(Map<String, dynamic>.from(cached!['user']));
+  }
+
+  Future<AppUser?> restore() async {
+    final version = _sessionVersion;
+    final token = await _store.read();
+    if (version != _sessionVersion) return null;
+    _api.authToken = token;
+    if (token == null) return null;
     try {
       final response = await _api.get('/auth/me');
+      if (version != _sessionVersion) return null;
       await _cacheUser(response['user'] as Map<String, dynamic>);
       return AppUser.fromJson(response['user'] as Map<String, dynamic>);
     } on ApiException catch (error) {
+      if (version != _sessionVersion) return null;
       if (error.statusCode != 401) rethrow;
       _api.authToken = null;
       await _store.clear();
       return null;
     } catch (error) {
+      if (version != _sessionVersion) return null;
       if (!isConnectionFailure(error)) rethrow;
-      final cached = await _store.readUser();
-      final until = DateTime.tryParse(cached?['offlineUntil'] ?? '');
-      if (until != null && until.isAfter(DateTime.now())) {
-        return AppUser.fromJson(Map<String, dynamic>.from(cached!['user']));
-      }
+      final cached = await _cachedUser();
+      if (cached != null) return cached;
       rethrow;
     }
   }
@@ -77,6 +95,7 @@ class AuthService {
   }
 
   Future<void> logout() async {
+    _sessionVersion++;
     // Clear persistence before allowing the UI to report a successful logout.
     await _store.clear();
     final request = _api.post('/auth/logout', {});

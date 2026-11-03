@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/widgets.dart';
 import 'api_service.dart';
 import 'offline_store.dart';
+import 'offline_resources.dart';
 
 class SyncStatus extends ChangeNotifier {
   int pending = 0;
@@ -23,6 +24,7 @@ class OfflineApiService extends ApiService with WidgetsBindingObserver {
       : _sessionToken = remote.authToken {
     if (automatic) {
       WidgetsBinding.instance.addObserver(this);
+      scheduleMicrotask(synchronize);
       _timer =
           Timer.periodic(const Duration(seconds: 30), (_) => synchronize());
     }
@@ -35,6 +37,8 @@ class OfflineApiService extends ApiService with WidgetsBindingObserver {
   Timer? _timer;
   bool _disposed = false;
   Future<void> _tail = Future.value();
+  Future<void>? _syncing;
+  int _localRevision = 0;
   Map<String, dynamic>? _state;
   final _random = Random.secure();
   String _id() => List.generate(
@@ -86,86 +90,107 @@ class OfflineApiService extends ApiService with WidgetsBindingObserver {
   @override
   Future<dynamic> get(String endpoint) async {
     _assertActive();
-    if (endpoint == '/decks') {
-      final result = await _exclusive(() async {
-        await _load();
-        return _copy(_state!['decks']);
-      });
-      unawaited(synchronize());
-      return result;
+    final local = await _exclusive(() async {
+      await _load();
+      if (endpoint == '/decks') return _copy(_state!['decks']);
+      final reads = _state!['reads'] as Map;
+      return _copy(reads[endpoint] ?? offlineDefault(endpoint));
+    });
+    if (local != null) {
+      // Reading local data must never wait for a network timeout.
+      return local;
     }
-    try {
-      final value = await remote.get(endpoint);
-      await _exclusive(() async {
-        await _load();
-        final next = _copy(_state) as Map<String, dynamic>;
-        next['reads'][endpoint] = value;
-        await _save(next);
-      });
-      return value;
-    } catch (error) {
-      if (!isConnectionFailure(error)) rethrow;
-      return _exclusive(() async {
-        await _load();
-        status.offline = true;
-        _notify();
-        if ((_state!['reads'] as Map).containsKey(endpoint)) {
-          return _copy(_state!['reads'][endpoint]);
-        }
-        rethrowError(error);
-      });
-    }
+    final value = await remote.get(endpoint);
+    await _exclusive(() async {
+      _assertActive();
+      await _load();
+      final next = _copy(_state) as Map<String, dynamic>;
+      next['reads'][endpoint] = value;
+      await _save(next);
+    });
+    return value;
   }
 
-  Never rethrowError(Object error) => throw error;
+  Future<void> synchronize() {
+    if (_syncing != null) return _syncing!;
+    final future = _synchronize();
+    _syncing = future;
+    return future.whenComplete(() => _syncing = null);
+  }
 
-  Future<void> synchronize() => _exclusive(() async {
-        if (_disposed ||
-            remote.authToken != _sessionToken ||
-            _sessionToken == null) {
+  Future<void> _synchronize() async {
+    if (_disposed ||
+        remote.authToken != _sessionToken ||
+        _sessionToken == null) {
+      return;
+    }
+    await _exclusive(_load);
+    if (status.conflict) return;
+    status.syncing = true;
+    _notify();
+    try {
+      while (true) {
+        _assertActive();
+        final operation = await _exclusive(() async {
+          final queue = _state!['queue'] as List;
+          return queue.isEmpty ? null : _copy(queue.first) as Map;
+        });
+        if (operation == null) break;
+        // Network I/O is outside the SQLite lock: edits remain immediate.
+        await remote.sendQueuedMutation(operation['method'], operation['path'],
+            Map<String, dynamic>.from(operation['body']), operation['id']);
+        await _exclusive(() async {
+          _assertActive();
+          final next = _copy(_state) as Map<String, dynamic>;
+          (next['queue'] as List)
+              .removeWhere((item) => item['id'] == operation['id']);
+          await _save(next);
+        });
+      }
+      final revision = _localRevision;
+      final snapshots = <String, dynamic>{};
+      for (final path in [
+        '/decks',
+        '/settings',
+        '/challenges',
+        '/notifications',
+        '/progress',
+        '/progress/history?offset=0'
+      ]) {
+        _assertActive();
+        snapshots[path] = await remote.get(path);
+      }
+      await _exclusive(() async {
+        _assertActive();
+        // A snapshot requested before a local edit must not erase that edit.
+        if (revision != _localRevision ||
+            (_state!['queue'] as List).isNotEmpty) {
           return;
         }
-        await _load();
-        if (status.conflict) return;
-        status.syncing = true;
-        _notify();
-        try {
-          while ((_state!['queue'] as List).isNotEmpty) {
-            if (_disposed || remote.authToken != _sessionToken) return;
-            final operation = (_state!['queue'] as List).first as Map;
-            await remote.sendQueuedMutation(
-                operation['method'],
-                operation['path'],
-                Map<String, dynamic>.from(operation['body']),
-                operation['id']);
-            final next = _copy(_state) as Map<String, dynamic>;
-            (next['queue'] as List).removeAt(0);
-            await _save(next);
-          }
-          if (_disposed || remote.authToken != _sessionToken) return;
-          final decks = await remote.get('/decks');
-          final next = _copy(_state) as Map<String, dynamic>;
-          next['decks'] = decks;
-          await _save(next);
-          status.offline = false;
-          status.error = null;
-          status.revision++;
-        } catch (error) {
-          status.offline = isConnectionFailure(error);
-          status.conflict = error is ApiException &&
-              [400, 403, 404, 409, 413].contains(error.statusCode);
-          status.error = error is ApiException && error.statusCode == 401
-              ? 'Sessão expirada. Entre novamente; as alterações locais serão mantidas.'
-              : status.conflict
-                  ? 'Sincronização interrompida: $error. As alterações estão salvas neste aparelho.'
-                  : status.offline
-                      ? null
-                      : 'Não foi possível sincronizar: $error';
-        } finally {
-          status.syncing = false;
-          _notify();
-        }
+        final next = _copy(_state) as Map<String, dynamic>;
+        next['decks'] = snapshots.remove('/decks');
+        (next['reads'] as Map).addAll(snapshots);
+        await _save(next);
+        status.revision++;
       });
+      status.offline = false;
+      status.error = null;
+    } catch (error) {
+      status.offline = isConnectionFailure(error);
+      status.conflict = error is ApiException &&
+          [400, 403, 404, 409, 413].contains(error.statusCode);
+      status.error = error is ApiException && error.statusCode == 401
+          ? 'Sessão expirada. Entre novamente; as alterações locais serão mantidas.'
+          : status.conflict
+              ? 'Sincronização interrompida: $error. As alterações estão salvas neste aparelho.'
+              : status.offline
+                  ? null
+                  : 'Não foi possível sincronizar: $error';
+    } finally {
+      status.syncing = false;
+      _notify();
+    }
+  }
 
   Future<List<dynamic>> cachedDecks() => _exclusive(() async {
         await _load();
@@ -177,14 +202,17 @@ class OfflineApiService extends ApiService with WidgetsBindingObserver {
   Future<void> discardPending() => _exclusive(() async {
         _assertActive();
         final decks = await remote.get('/decks');
+        final settings = await remote.get('/settings');
         await _load();
         final next = _copy(_state) as Map<String, dynamic>;
         next['decks'] = decks;
+        next['reads']['/settings'] = settings;
         next['queue'] = <dynamic>[];
         await _save(next);
         status.conflict = false;
         status.error = null;
         status.offline = false;
+        status.revision++;
         _notify();
       });
 
@@ -201,7 +229,9 @@ class OfflineApiService extends ApiService with WidgetsBindingObserver {
     _assertActive();
     return endpoint.startsWith('/decks')
         ? _mutate('POST', endpoint, body)
-        : remote.post(endpoint, body);
+        : supportsOfflineMutation(endpoint)
+            ? _mutateResource('POST', endpoint, body)
+            : _onlineMutation(() => remote.post(endpoint, body));
   }
 
   @override
@@ -209,7 +239,9 @@ class OfflineApiService extends ApiService with WidgetsBindingObserver {
     _assertActive();
     return endpoint.startsWith('/decks')
         ? _mutate('PUT', endpoint, body)
-        : remote.put(endpoint, body);
+        : supportsOfflineMutation(endpoint)
+            ? _mutateResource('PUT', endpoint, body)
+            : _onlineMutation(() => remote.put(endpoint, body));
   }
 
   @override
@@ -217,7 +249,36 @@ class OfflineApiService extends ApiService with WidgetsBindingObserver {
     _assertActive();
     return endpoint.startsWith('/decks')
         ? _mutate('DELETE', endpoint, {})
-        : remote.delete(endpoint);
+        : supportsOfflineMutation(endpoint)
+            ? _mutateResource('DELETE', endpoint, {})
+            : _onlineMutation(() => remote.delete(endpoint));
+  }
+
+  Future<dynamic> _onlineMutation(Future<dynamic> Function() action) async {
+    final result = await action();
+    await synchronize();
+    return result;
+  }
+
+  Future<dynamic> _mutateResource(
+      String method, String endpoint, Map<String, dynamic> body) async {
+    final result = await _exclusive(() async {
+      _assertActive();
+      await _load();
+      final next = _copy(_state) as Map<String, dynamic>;
+      final data = _copy(body) as Map<String, dynamic>;
+      final value =
+          mutateOfflineResource(next, method, endpoint, data, 'local-${_id()}');
+      (next['queue'] as List)
+          .add({'id': _id(), 'method': method, 'path': endpoint, 'body': data});
+      await _save(next);
+      _localRevision++;
+      status.revision++;
+      _notify();
+      return _copy(value);
+    });
+    unawaited(synchronize());
+    return result;
   }
 
   Future<dynamic> _mutate(
@@ -225,12 +286,9 @@ class OfflineApiService extends ApiService with WidgetsBindingObserver {
     if (endpoint.endsWith('/review') && body['challengeId'] != null) {
       await synchronize();
       if (status.pending > 0 || status.offline || status.error != null) {
-        throw StateError(
-            'Sincronize seus cartões antes de iniciar um desafio.');
+        throw StateError('Sincronize seus cartões antes de iniciar um desafio.');
       }
-      final result = await remote.post(endpoint, body);
-      await synchronize();
-      return result;
+      return _onlineMutation(() => remote.post(endpoint, body));
     }
     final result = await _exclusive(() async {
       if (_disposed || remote.authToken != _sessionToken) {
@@ -344,12 +402,15 @@ class OfflineApiService extends ApiService with WidgetsBindingObserver {
             if (data['challengeId'] != null) {
               throw StateError('Revisões de desafio precisam de conexão.');
             }
-            if (card['suspended'] == true) throw StateError('Cartão suspenso.');
+            if (card['suspended'] == true) {
+              throw StateError('Cartão suspenso.');
+            }
             data['reviewedAt'] = DateTime.now().toUtc().toIso8601String();
             card['status'] =
                 data['correct'] == false || card['status'] == 'novo'
                     ? 'aRevisar'
                     : 'dominado';
+
             value = card;
           } else if (method == 'DELETE') {
             cards.remove(card);
@@ -376,6 +437,9 @@ class OfflineApiService extends ApiService with WidgetsBindingObserver {
       (next['queue'] as List)
           .add({'id': _id(), 'method': method, 'path': endpoint, 'body': data});
       await _save(next);
+      _localRevision++;
+      status.revision++;
+      _notify();
       return _copy(value);
     });
     unawaited(synchronize());
