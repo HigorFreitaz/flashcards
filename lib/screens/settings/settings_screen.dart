@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/repositories/settings_repository.dart';
+import '../../data/services/biometric_service.dart';
 import '../../data/repositories/user_repository.dart';
 import '../../data/repositories/progress_repository.dart';
 import '../../data/repositories/challenge_repository.dart';
@@ -148,13 +149,38 @@ class _SettingsView extends StatelessWidget {
             subtitle:
                 'Peça digital ou Face ID toda vez que o app voltar do segundo plano.',
             value: viewModel.biometricLockEnabled,
-            onChanged: (v) {
+            onChanged: (v) async {
+              if (v) {
+                final biometricService = context.read<BiometricService>();
+                final canAuth = await biometricService.canAuthenticate();
+                if (!canAuth) {
+                  if (context.mounted) {
+                    showLumeToast(
+                        context,
+                        'Biometria ou bloqueio de tela não disponível neste aparelho');
+                  }
+                  return;
+                }
+                final authenticated = await biometricService.authenticate(
+                  localizedReason:
+                      'Confirme sua biometria para ativar o bloqueio',
+                );
+                if (!authenticated) {
+                  if (context.mounted) {
+                    showLumeToast(
+                        context, 'Não foi possível confirmar a autenticação');
+                  }
+                  return;
+                }
+              }
               viewModel.setBiometricLockEnabled(v);
-              showLumeToast(
-                  context,
-                  v
-                      ? 'Bloqueio por biometria ativado'
-                      : 'Bloqueio por biometria desativado');
+              if (context.mounted) {
+                showLumeToast(
+                    context,
+                    v
+                        ? 'Bloqueio por biometria ativado'
+                        : 'Bloqueio por biometria desativado');
+              }
             },
           ),
           const SizedBox(height: LumeSpacing.section),

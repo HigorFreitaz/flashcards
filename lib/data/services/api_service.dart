@@ -19,14 +19,29 @@ class ApiException implements Exception {
 }
 
 class ApiService {
-  ApiService({String? baseUrl}) : _baseUrl = baseUrl ?? _defaultBaseUrl;
+  ApiService({String? baseUrl})
+      : _baseUrl = _normalizeUrl(baseUrl ?? _defaultBaseUrl);
 
   static String get _defaultBaseUrl {
-    if (kIsWeb) return 'http://192.168.3.15:3000/api';
+    const envUrl = String.fromEnvironment('API_URL',
+        defaultValue: String.fromEnvironment('API_BASE_URL'));
+    if (envUrl.isNotEmpty) return envUrl;
     return 'http://192.168.3.15:3000/api';
   }
 
+  static String _normalizeUrl(String url) {
+    var trimmed = url.trim();
+    while (trimmed.endsWith('/')) {
+      trimmed = trimmed.substring(0, trimmed.length - 1);
+    }
+    if (!trimmed.endsWith('/api')) {
+      trimmed = '$trimmed/api';
+    }
+    return trimmed;
+  }
+
   final String _baseUrl;
+  String get baseUrl => _baseUrl;
   String? authToken;
 
   Map<String, String> get _headers => {

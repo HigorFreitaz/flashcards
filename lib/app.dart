@@ -1,3 +1,4 @@
+import 'data/services/biometric_service.dart';
 import 'data/services/offline_api_service.dart';
 import 'data/services/offline_store.dart';
 import 'package:flutter/material.dart';
@@ -13,29 +14,39 @@ import 'data/services/api_service.dart';
 import 'data/services/auth_service.dart';
 import 'data/services/session_store.dart';
 import 'screens/auth/auth_screen.dart';
+import 'screens/auth/biometric_lock_wrapper.dart';
 import 'screens/root/root_shell.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'theme/lume_theme.dart';
 
 class LumeApp extends StatelessWidget {
   const LumeApp(
-      {super.key, this.apiService, this.sessionStore, this.offlineStore});
+      {super.key,
+      this.apiService,
+      this.apiBaseUrl,
+      this.sessionStore,
+      this.offlineStore,
+      this.biometricService});
   final OfflineStore? offlineStore;
   final SessionStore? sessionStore;
-
   final ApiService? apiService;
+  final String? apiBaseUrl;
+  final BiometricService? biometricService;
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        Provider<BiometricService>(
+            create: (_) => biometricService ?? BiometricService()),
         Provider<OfflineStore>(
             create: (_) =>
                 offlineStore ??
                 (apiService == null
                     ? SqliteOfflineStore()
                     : MemoryOfflineStore())),
-        Provider<ApiService>(create: (_) => apiService ?? ApiService()),
+        Provider<ApiService>(
+            create: (_) => apiService ?? ApiService(baseUrl: apiBaseUrl)),
         Provider(
             create: (ctx) => AuthService(ctx.read<ApiService>(),
                 sessionStore: sessionStore ??
@@ -97,6 +108,8 @@ class _LumeMaterialApp extends StatelessWidget {
       theme: buildLumeTheme(brightness: Brightness.light),
       darkTheme: buildLumeTheme(brightness: Brightness.dark),
       themeMode: themeMode,
+      builder: (context, child) =>
+          BiometricLockWrapper(child: child ?? const SizedBox.shrink()),
       home: context.watch<UserRepository>().restoring
           ? const Scaffold(body: Center(child: CircularProgressIndicator()))
           : context.watch<UserRepository>().currentUser == null

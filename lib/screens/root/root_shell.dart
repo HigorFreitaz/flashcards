@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 
 import '../../data/repositories/settings_repository.dart';
 import '../../viewmodels/root_shell_view_model.dart';
-import '../../widgets/buttons/lume_button.dart';
 import '../challenge/challenge_screen.dart';
 import '../home/home_screen.dart';
 import '../library/library_screen.dart';
@@ -39,33 +38,10 @@ class _RootShellView extends StatefulWidget {
   State<_RootShellView> createState() => _RootShellViewState();
 }
 
-class _RootShellViewState extends State<_RootShellView>
-    with WidgetsBindingObserver {
+class _RootShellViewState extends State<_RootShellView> {
   late int _index = widget.initialTab;
-  bool _locked = false;
 
   void _goToTab(int index) => setState(() => _index = index);
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (!mounted) return;
-    if (state == AppLifecycleState.resumed &&
-        context.read<RootShellViewModel>().biometricLockEnabled) {
-      setState(() => _locked = true);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -83,10 +59,8 @@ class _RootShellViewState extends State<_RootShellView>
     ];
 
     return Scaffold(
-      body: Stack(
-        children: [
-          Column(children: [
-            if (viewModel.syncMessage != null)
+      body: Column(children: [
+        if (viewModel.syncMessage != null)
               SafeArea(
                   bottom: false,
                   child: MaterialBanner(
@@ -133,77 +107,7 @@ class _RootShellViewState extends State<_RootShellView>
                   )),
             Expanded(child: IndexedStack(index: _index, children: tabs)),
           ]),
-          if (_locked)
-            _BiometricLockScreen(
-                onUnlock: () => setState(() => _locked = false)),
-        ],
-      ),
       bottomNavigationBar: _LumeNavBar(index: _index, onChanged: _goToTab),
-    );
-  }
-}
-
-class _BiometricLockScreen extends StatelessWidget {
-  const _BiometricLockScreen({required this.onUnlock});
-
-  final VoidCallback onUnlock;
-
-  @override
-  Widget build(BuildContext context) {
-    final fontFamily = Theme.of(context).textTheme.bodyMedium?.fontFamily;
-    return Positioned.fill(
-      child: ColoredBox(
-        color: context.lume.background,
-        child: SafeArea(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 84,
-                    height: 84,
-                    margin: const EdgeInsets.only(bottom: 24),
-                    decoration: BoxDecoration(
-                        color: context.lume.surface,
-                        borderRadius: BorderRadius.circular(28)),
-                    alignment: Alignment.center,
-                    child: Icon(Icons.fingerprint,
-                        size: 42, color: context.lume.primary),
-                  ),
-                  Text(
-                    'Lume bloqueado',
-                    style: TextStyle(
-                        fontFamily: fontFamily,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.4,
-                        color: context.lume.ink),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Use sua digital ou Face ID para continuar.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        fontFamily: fontFamily,
-                        fontSize: 14,
-                        height: 1.4,
-                        color: context.lume.inkMuted),
-                  ),
-                  const SizedBox(height: 30),
-                  LumeButton(
-                    label: 'Desbloquear',
-                    icon: Icons.fingerprint,
-                    expand: false,
-                    onPressed: onUnlock,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

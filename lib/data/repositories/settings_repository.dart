@@ -9,6 +9,8 @@ class SettingsRepository extends ChangeNotifier {
     if (apiService is OfflineApiService) apiService.status.addListener(_afterSync);
     if (_apiService?.authToken != null) {
       fetchSettings();
+    } else {
+      loaded = true;
     }
   }
 
@@ -40,9 +42,13 @@ class SettingsRepository extends ChangeNotifier {
 
   bool biometricLockEnabled = false;
   String timeZone = 'America/Sao_Paulo';
+  bool loaded = false;
 
   Future<void> fetchSettings() async {
-    if (_apiService == null) return;
+    if (_apiService == null) {
+      loaded = true;
+      return;
+    }
     try {
       final res = await _apiService.get('/settings');
       if (res is Map<String, dynamic>) {
@@ -57,10 +63,12 @@ class SettingsRepository extends ChangeNotifier {
         }
         biometricLockEnabled =
             res['biometricLockEnabled'] as bool? ?? biometricLockEnabled;
-        notifyListeners();
       }
     } catch (e) {
       debugPrint('Erro ao buscar configurações via API: $e');
+    } finally {
+      loaded = true;
+      notifyListeners();
     }
   }
 
